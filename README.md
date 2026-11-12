@@ -1,14 +1,78 @@
-# EcoStore · Zero-Waste E-commerce
+# Zero-Waste E-commerce
 
-Bản demo cửa hàng sản phẩm ít rác thải bằng tiếng Việt: Vue 3, NestJS, PostgreSQL và chatbot EcoBot. Dùng để học tập, trải nghiệm luồng mua hàng và chia sẻ mã nguồn.
+[![Build and Test](https://github.com/lnghuy2301/Zero-Waste-Ecommerce/actions/workflows/ci.yml/badge.svg)](https://github.com/lnghuy2301/Zero-Waste-Ecommerce/actions/workflows/ci.yml)
 
-**Đây là dự án mô phỏng. Không bán hàng, không giao hàng và không xử lý tiền thật.** Tài khoản, nhận xét, thông tin sản phẩm và thông tin môi trường đều là dữ liệu mẫu.
+**EcoStore** is a full-stack e-commerce platform for sustainable and reusable products. It brings together a Vietnamese storefront, an administration dashboard, inventory and order management, and EcoBot, a product support assistant.
 
-![Hình minh họa EcoStore](frontend/public/images/hero.svg)
+![EcoStore](frontend/public/images/hero.svg)
 
-## Chạy trên máy cá nhân
+## Features
 
-Cần Node.js **20.19+ hoặc 22.12+**, npm, Python **3.10+**, Docker Desktop đang chạy (hoặc PostgreSQL 16 cài sẵn). Các lệnh dưới đây chạy tại thư mục gốc.
+- **Product catalog:** categories, search, price filters, product variants, stock levels, and scheduled promotions.
+- **Customer accounts:** email/password authentication, optional Google sign-in, profiles, avatars, and password recovery.
+- **Shopping cart and checkout:** server-side pricing, shipping fees, transactional stock updates, and order cancellation.
+- **Order management:** purchase history, order details, status transitions, and inventory restoration.
+- **Reviews:** ratings from customers with completed purchases, media attachments, and moderation tools.
+- **Administration:** product, category, account, promotion, and order management, with sales and inventory charts.
+- **EcoBot:** catalog and store policy search, optional Groq responses, and fallback answers when the AI service is unavailable.
+- **Responsive interface:** customer and administration pages built with Vue and Tailwind CSS.
+
+Checkout supports cash on delivery and simulated MoMo/PayPal flows. The payment simulations do not transfer money; live payment provider integration is not included.
+
+## Technology Stack
+
+| Component                | Technologies                                          |
+| ------------------------ | ----------------------------------------------------- |
+| Frontend                 | Vue 3, TypeScript, Vite, Vue Router, Tailwind CSS     |
+| UI and visualization     | Chart.js, vue-easy-lightbox, vue-toastification       |
+| API                      | NestJS 11, Passport, JWT, class-validator, Swagger    |
+| Database                 | PostgreSQL 16, Prisma 5                               |
+| Authentication and email | bcrypt, Google OAuth, Nodemailer                      |
+| Chatbot                  | Python, Flask, Waitress, optional Groq API            |
+| Tooling                  | Docker Compose, Jest, Python unittest, GitHub Actions |
+
+## Project Structure
+
+```text
+Zero-Waste-Ecommerce/
+├── backend/
+│   ├── prisma/             Database schema, migrations, and seed
+│   ├── src/                API modules, business logic, and repositories
+│   └── test/               HTTP tests
+├── frontend/
+│   ├── public/images/      Product illustrations and website assets
+│   └── src/
+│       ├── components/     Shared interface components
+│       ├── service/        API clients
+│       ├── utils/          Media URLs, pricing, and notifications
+│       └── views/          Storefront and administration pages
+├── chatbot/
+│   ├── api_chatbot.py      EcoBot service
+│   └── data_txt/           Store policy content
+├── data/                   Shared product catalog
+├── docs/                   Architecture and development guides
+├── scripts/                Environment, assets, and project utilities
+└── docker-compose.yml      PostgreSQL and optional Mailpit
+```
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js **20.19+ or 22.12+** and npm
+- Python **3.10+**
+- Docker with Docker Compose, or an existing PostgreSQL 16 instance
+
+### 1. Clone the repository
+
+```sh
+git clone https://github.com/lnghuy2301/Zero-Waste-Ecommerce.git
+cd Zero-Waste-Ecommerce
+```
+
+### 2. Install and configure
+
+Run the following commands from the repository root:
 
 ```sh
 npm run setup:env
@@ -19,19 +83,27 @@ npm run db:migrate
 npm run db:seed
 ```
 
-`setup:env` tạo các file `.env` từ mẫu, sinh JWT secret ngẫu nhiên và **giữ nguyên file đã có**. Nếu dùng lại bản dự án cũ, đối chiếu `backend/.env` với [backend/.env.example](backend/.env.example): DATABASE_URL phải trỏ tới **ZeroWasteDemo** với đúng mật khẩu/cổng của Compose; JWT_SECRET cần chuỗi ngẫu nhiên ít nhất 32 ký tự. Không chạy seed lên database thật.
+The environment setup script creates `.env` files for each service and generates a random JWT secret. Existing environment files are preserved. If you already have a `backend/.env`, check its database connection against [backend/.env.example](backend/.env.example).
 
-Mở ba terminal:
+The seed adds 18 products, 36 variants, 6 categories, sample accounts, orders, and reviews. It does not reset existing account passwords or overwrite existing catalog records. Use a separate development database for sample data.
+
+### 3. Start the application
+
+Start the API and frontend in separate terminals:
 
 ```sh
-# Terminal 1: NestJS API
+# API
 npm run dev:backend
+```
 
-# Terminal 2: Vue frontend
+```sh
+# Frontend
 npm run dev:frontend
 ```
 
-Terminal 3 trên Windows PowerShell:
+Set up and start EcoBot in a third terminal.
+
+**Windows PowerShell:**
 
 ```powershell
 python -m venv chatbot/.venv
@@ -39,97 +111,107 @@ chatbot/.venv/Scripts/python.exe -m pip install -r chatbot/requirements.txt
 chatbot/.venv/Scripts/python.exe chatbot/api_chatbot.py
 ```
 
-Trên macOS/Linux, dùng `chatbot/.venv/bin/python` thay cho `chatbot/.venv/Scripts/python.exe`.
+**macOS / Linux:**
 
-| Dịch vụ        | Địa chỉ                        |
-| -------------- | ------------------------------ |
-| Cửa hàng       | http://localhost:5173          |
-| Trang quản trị | http://localhost:5173/admin    |
-| API            | http://localhost:3000/api/v1   |
-| Swagger        | http://localhost:3000/api/docs |
-| Chatbot health | http://localhost:5000/health   |
+```sh
+python3 -m venv chatbot/.venv
+chatbot/.venv/bin/python -m pip install -r chatbot/requirements.txt
+chatbot/.venv/bin/python chatbot/api_chatbot.py
+```
 
-Tài khoản demo sau khi seed:
+| Service           | Address                        |
+| ----------------- | ------------------------------ |
+| Storefront        | http://localhost:5173          |
+| Administration    | http://localhost:5173/admin    |
+| API               | http://localhost:3000/api/v1   |
+| API documentation | http://localhost:3000/api/docs |
+| EcoBot health     | http://localhost:5000/health   |
 
-| Vai trò    | Email                | Mật khẩu mặc định |
-| ---------- | -------------------- | ----------------- |
-| Quản trị   | admin@example.com    | EcoDemo123!       |
-| Khách hàng | customer@example.com | EcoDemo123!       |
+### Sample Accounts
 
-Đặt `DEMO_PASSWORD` trước lần seed đầu tiên để dùng mật khẩu khác. Seed chạy lại không đặt lại mật khẩu, tồn kho hay nội dung đã sửa của bản ghi đã tồn tại.
+| Role          | Email                | Password    |
+| ------------- | -------------------- | ----------- |
+| Administrator | admin@example.com    | EcoDemo123! |
+| Customer      | customer@example.com | EcoDemo123! |
 
-## Có gì trong bản demo?
+Set `DEMO_PASSWORD` before the first seed run to use a different password. These accounts are intended for development and should not be enabled on a live storefront.
 
-- Trang chủ, danh mục, tìm kiếm và bộ lọc sản phẩm; biến thể, tồn kho và khuyến mãi theo ngày hiệu lực.
-- Đăng ký, đăng nhập JWT, hồ sơ, đổi mật khẩu và ảnh đại diện.
-- Giỏ hàng, đặt hàng COD, mô phỏng MoMo/PayPal; backend tính giá và phí vận chuyển. Hai checkout cùng mua món cuối chỉ một yêu cầu thành công.
-- Xem và hủy đơn đang chờ; hoàn kho trong transaction. Quản trị theo dõi đơn và chuyển trạng thái theo luồng hợp lệ.
-- Đánh giá sau đơn hoàn thành, đính kèm ảnh/video, quản trị ẩn/hiện bình luận.
-- Dashboard doanh thu, tồn kho và khách hàng.
-- EcoBot tìm kiếm danh mục/chính sách không cần API key; bật Groq bằng `GROQ_API_KEY` nếu muốn tạo câu trả lời tự nhiên hơn. Khi Groq lỗi, tự dùng câu trả lời cục bộ.
-- 18 sản phẩm, 36 biến thể, 6 danh mục, 4 tài khoản, 15 đơn mẫu và nhận xét mô phỏng. 20 hình SVG được tạo riêng, không cần tải ảnh sản phẩm từ bên ngoài.
+## Configuration
 
-## Email và Google tùy chọn
+Each service includes an `.env.example` file.
 
-Để thử quên mật khẩu, bật hộp thư cục bộ:
+| Service  | Variables                                                         | Purpose                                        |
+| -------- | ----------------------------------------------------------------- | ---------------------------------------------- |
+| Backend  | `DATABASE_URL`, `JWT_SECRET`                                      | Database connection and token signing          |
+| Backend  | `HOST`, `PORT`, `FRONTEND_URL`, `CORS_ORIGINS`                    | Server binding, redirects, and allowed origins |
+| Backend  | `SMTP_*`                                                          | Password recovery email                        |
+| Backend  | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` | Optional Google OAuth                          |
+| Backend  | `DEMO_PAYMENTS`                                                   | Enable payment simulations outside production  |
+| Frontend | `VITE_API_URL`, `VITE_BACKEND_URL`, `VITE_CHATBOT_URL`            | API, upload, and chatbot URLs                  |
+| Frontend | `VITE_GOOGLE_LOGIN`                                               | Show the Google sign-in button                 |
+| Chatbot  | `GROQ_API_KEY`, `GROQ_MODEL`                                      | Optional AI responses                          |
+
+Frontend `VITE_*` variables are public build configuration. Keep credentials in backend or chatbot environment files.
+
+### Password Recovery
+
+Start Mailpit to receive development emails:
 
 ```sh
 docker compose --profile mail up -d
 ```
 
-Giữ SMTP*HOST=localhost, SMTP_PORT=1025 trong backend/.env và mở http://localhost:8025 để đọc thư thử nghiệm. Không gửi thư thật khi dùng cấu hình này. Đổi SMTP*\* nếu dùng máy chủ email riêng.
+Use `SMTP_HOST=localhost`, `SMTP_PORT=1025`, and `SMTP_SECURE=false` in `backend/.env`. Open http://localhost:8025 to view captured messages. Configure your own SMTP service when deploying.
 
-Google OAuth cần GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET và GOOGLE_CALLBACK_URL. Không có cấu hình, dùng đăng nhập email/mật khẩu. Bật `VITE_GOOGLE_LOGIN=true` trong frontend/.env nếu muốn hiện nút Google. Callback dùng OAuth state và trả token qua URL fragment.
+### Google Sign-In and EcoBot
 
-## Kiểm tra
+Google sign-in requires the backend OAuth variables and `VITE_GOOGLE_LOGIN=true` in the frontend environment.
+
+EcoBot works without a Groq key using the shared catalog and store policies. Add `GROQ_API_KEY` to enable AI responses. EcoBot does not access customer accounts or private order information.
+
+## Development Commands
 
 ```sh
 npm run build
 npm test
-# Windows:
-chatbot/.venv/Scripts/python.exe -m unittest discover -s chatbot -p "test_*.py" -v
+npm --prefix backend run test:e2e -- --runInBand
+npm --prefix frontend run type-check
+```
 
-# Khi API và PostgreSQL demo đang chạy:
+Run chatbot tests with the Python interpreter inside `chatbot/.venv`:
+
+```powershell
+chatbot/.venv/Scripts/python.exe -m unittest discover -s chatbot -p "test_*.py" -v
+```
+
+With the API and development database running:
+
+```sh
 npm run demo:smoke
-# Khi Mailpit và API có SMTP_HOST cấu hình đang chạy:
+# Requires Mailpit and SMTP configuration:
 npm run demo:mail-smoke
 ```
 
-Smoke test kiểm tra API thật, quyền truy cập, nhập liệu lồng nhau, giá, tồn kho đồng thời, hoàn kho và thanh toán mô phỏng. Nó tạo bản ghi thử có tên riêng rồi dọn chúng. Không chạy lên dịch vụ sản xuất. GitHub Actions chạy build, unit test, chatbot test và smoke test với PostgreSQL riêng.
+GitHub Actions runs builds, automated tests, integration checks, and runtime dependency audits.
 
-## Cấu trúc và công nghệ
+## Documentation
 
-```text
-backend/
-  prisma/              Schema, migrations tiến tới và seed
-  src/                 NestJS: controller → service → repository → Prisma
-  test/                Kiểm thử HTTP
-frontend/
-  src/views/           Trang khách hàng và quản trị
-  src/components/      Navbar, footer, chatbot
-  src/service/         Axios API client
-  src/utils/           URL ảnh, giá, thông báo
-  public/images/       Minh họa SVG dùng trong dữ liệu mẫu
-chatbot/
-  api_chatbot.py       Flask + tìm kiếm nhẹ + Groq HTTP tùy chọn
-  data_txt/            Chính sách cửa hàng mẫu
-data/catalogue.json    Danh mục dùng chung cho seed và EcoBot
-scripts/               Thiết lập môi trường, hình ảnh, smoke test, dọn build
-docs/                  Kiến trúc, kiểm thử và phạm vi demo
-```
+- [Architecture and API](docs/ARCHITECTURE.md)
+- [Development guide](docs/MAINTENANCE.md)
+- [Catalog and image assets](data/README.md)
+- [Security](SECURITY.md)
+- [Backend](backend/README.md)
+- [Frontend](frontend/README.md)
 
-Frontend dùng Vue Router, Tailwind CSS, Axios, Chart.js, vue-easy-lightbox và vue-toastification. Backend dùng NestJS 11, Prisma 5, Passport/JWT, bcrypt, class-validator, Swagger và Nodemailer. Chatbot chỉ cần Flask, flask-cors, python-dotenv và Waitress; không cần PyTorch, FAISS hay tải embedding model.
+## Project Utilities
 
-Xem [kiến trúc và API](docs/ARCHITECTURE.md), [báo cáo sửa lỗi và kiểm thử](docs/MAINTENANCE.md), [bảo mật](SECURITY.md) và [nguồn dữ liệu/hình ảnh](data/README.md).
+- `npm run clean` removes build output, coverage, and Python caches.
+- `npm run export:public` creates a source distribution under `release/zero-waste-ecommerce`, excluding credentials, dependencies, uploaded files, and Git history.
+- `node scripts/generate-demo-assets.mjs` regenerates the product illustrations.
+- `docker compose stop` stops database services while preserving their volumes.
 
-## Dọn dung lượng và chia sẻ
+Docker Compose runs PostgreSQL and optional Mailpit. The API, frontend, and chatbot run as separate applications.
 
-`npm run clean` xóa build, coverage và cache Python, giữ dependencies đang dùng và dữ liệu cá nhân. Có thể xóa `node_modules` và `chatbot/.venv` khi không làm việc; cài lại bằng lockfile/requirements khi cần. Hai môi trường Python cũ và vector index đã được thay bằng môi trường nhẹ.
+## License
 
-`npm run export:public` tạo bản mã nguồn sạch ở `release/zero-waste-ecommerce`, bỏ qua .git, .env, môi trường ảo, dependencies, ảnh tải lên và dữ liệu cục bộ. Kiểm tra nội dung trước khi đăng vào repository mới.
-
-Không commit .env, khóa API, mật khẩu SMTP, database dump hoặc file upload của người dùng. Nếu khóa từng xuất hiện trong commit cũ, phải thu hồi/đổi khóa; xóa khỏi file hiện tại không xóa lịch sử Git. Lịch sử repo hiện tại chưa được viết lại.
-
-Docker Compose chỉ chạy PostgreSQL và Mailpit tùy chọn, không đóng gói cả ba ứng dụng. Để dừng DB: `docker compose stop`. Dữ liệu nằm trong volume riêng; không cần xóa volume để cập nhật mã nguồn.
-
-Chưa thêm giấy phép mã nguồn theo lựa chọn của chủ dự án. Không có file LICENSE trong bản bàn giao.
+A license has not been selected for this repository.

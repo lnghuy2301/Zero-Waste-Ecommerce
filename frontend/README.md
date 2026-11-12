@@ -1,9 +1,46 @@
-# Frontend
+# EcoStore Frontend
 
-Vue 3 + Vue Router + Vite + TypeScript + Tailwind CSS.
+A responsive storefront and administration dashboard built with Vue 3, TypeScript, Vite, Vue Router, and Tailwind CSS.
 
-Chạy từ thư mục này: `npm ci`, `npm run dev`. Kiểm tra kiểu và build: `npm run build`.
+## Setup
 
-Sao chép .env.example sang .env hoặc chạy `npm run setup:env` ở thư mục gốc. VITE*API_URL chỉ tới NestJS, VITE_CHATBOT_URL chỉ tới Flask. Các biến VITE*\* là cấu hình công khai, không chứa API key.
+Follow the [project setup guide](../README.md) to start the API and database. From this directory:
 
-Ảnh demo ở public/images, ảnh người dùng ở NestJS /uploads. Cấu hình host ở src/utils/media.ts. Xem [README gốc](../README.md) để chạy đủ các dịch vụ.
+```sh
+npm ci
+npm run dev
+```
+
+Copy `.env.example` to `.env`, or run `npm run setup:env` from the repository root.
+
+| Variable            | Purpose                                     |
+| ------------------- | ------------------------------------------- |
+| `VITE_API_URL`      | NestJS API base URL, including `/api/v1`    |
+| `VITE_BACKEND_URL`  | Optional separate origin for uploaded files |
+| `VITE_CHATBOT_URL`  | EcoBot API base URL                         |
+| `VITE_GOOGLE_LOGIN` | Enable the Google sign-in button            |
+
+These variables are public configuration. Do not put credentials in them.
+
+## Structure
+
+- `src/views`: storefront, account, checkout, and administration pages.
+- `src/components`: navigation, footer, and chat interface.
+- `src/service`: Axios clients for backend features.
+- `src/utils`: media URLs, pricing, and notifications.
+- `public/images`: product illustrations and website assets.
+
+Product illustrations are served with the frontend. Uploaded media is served by the backend through `/uploads`.
+
+## Commands
+
+```sh
+npm run dev
+npm run type-check
+npm run build
+npm run preview
+```
+
+The build writes static assets to `dist`. The included `vercel.json` provides a single-page application fallback for Vue Router.
+
+The storefront content is in Vietnamese. Project documentation is in English.

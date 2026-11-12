@@ -2,7 +2,7 @@
   "name": "zero-waste-ecommerce",
   "version": "1.0.0",
   "private": true,
-  "description": "Local demo of a zero-waste shop with Vue, NestJS, PostgreSQL and EcoBot",
+  "description": "E-commerce platform for sustainable products built with Vue, NestJS, PostgreSQL and EcoBot",
   "scripts": {
     "setup:env": "node scripts/setup-env.mjs",
     "install:all": "npm --prefix backend ci && npm --prefix frontend ci",
