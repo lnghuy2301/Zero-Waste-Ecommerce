@@ -4,6 +4,9 @@ import { notify } from '@/utils/notifier.ts'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  scrollBehavior(to) {
+    return to.hash ? { el: to.hash, top: 110 } : { top: 0 }
+  },
   routes: [
     { path: '/', name: 'home', component: Home },
     { path: '/login', name: 'login', component: () => import('../views/Login.vue') },
@@ -17,34 +20,52 @@ const router = createRouter({
       path: '/cartpayment',
       name: 'cartpayment',
       component: () => import('../views/CartPayment.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/payment-momo',
-      name: 'FakePaymentMoMo',
-      component: () => import('../views/FakePaymentMoMo.vue'),
+      name: 'demo-payment-momo',
+      props: { provider: 'MoMo', code: 'MOMO_DEMO' },
+      component: () => import('../views/DemoPayment.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/payment-paypal',
-      name: 'FakePaymentPayPal',
-      component: () => import('../views/FakePaymentPayPal.vue'),
+      name: 'demo-payment-paypal',
+      props: { provider: 'PayPal', code: 'PAYPAL_DEMO' },
+      component: () => import('../views/DemoPayment.vue'),
+      meta: { requiresAuth: true },
     },
-    { path: '/profile', name: 'profile', component: () => import('../views/Profile.vue') },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('../views/Profile.vue'),
+      meta: { requiresAuth: true },
+    },
     {
       path: '/change_password',
       name: 'change_password',
       component: () => import('../views/Change_password.vue'),
+      meta: { requiresAuth: true },
     },
     { path: '/products', name: 'products', component: () => import('../views/Products.vue') },
-    { path: '/orders', name: 'orders', component: () => import('../views/Order.vue') },
+    {
+      path: '/orders',
+      name: 'orders',
+      component: () => import('../views/Order.vue'),
+      meta: { requiresAuth: true },
+    },
     {
       path: '/detail-orders/:id',
       name: 'detailorders',
       component: () => import('../views/OrderDetail.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/change-password',
       name: 'ChangePassword',
       component: () => import('../views/Change_password.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/reset-password',
@@ -55,6 +76,11 @@ const router = createRouter({
       path: '/about',
       name: 'About',
       component: () => import('@/views/About.vue'),
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () => import('../views/NotFound.vue'),
     },
     // === ADMIN ROUTE (có bảo vệ) ===
     {
@@ -103,11 +129,13 @@ router.beforeEach((to, from, next) => {
   if (userStr) {
     try {
       user = JSON.parse(userStr)
-    } catch (_) {}
+    } catch {
+      localStorage.removeItem('user')
+    }
   }
 
   // Yêu cầu đăng nhập
-  if (to.meta.requiresAuth && !user) {
+  if (to.meta.requiresAuth && (!user || !localStorage.getItem('token'))) {
     next('/login')
     return
   }

@@ -1,17 +1,29 @@
-version: '3.8'
+name: zero-waste-demo
 services:
   db:
-    image: postgres:16-alpine # Bản Alpine siêu nhẹ
-    container_name: zero_waste_pg
+    image: postgres:16-alpine
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: Password123
-      POSTGRES_DB: ZeroWasteDB
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-zero_waste_demo}
+      POSTGRES_DB: ZeroWasteDemo
     ports:
-      - "5432:5432" # Cổng mặc định của Postgres
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: always
+      - postgres_demo_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ZeroWasteDemo"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  mail:
+    image: axllent/mailpit:v1.27
+    profiles: ["mail"]
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
+    restart: unless-stopped
 
 volumes:
-  postgres_data:
+  postgres_demo_data:

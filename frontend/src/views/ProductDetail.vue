@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { mediaUrl } from '@/utils/media'
+import { notify } from '@/utils/notifier'
 import { ref, computed, onMounted, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import api from '@/service/api.ts'
@@ -75,11 +77,7 @@ const checkAdminRole = () => {
 }
 
 // --- HELPERS ---
-const getImageUrl = (path: string | null) => {
-  if (!path) return 'https://via.placeholder.com/400x400?text=Không+có+ảnh'
-  if (path.startsWith('http://') || path.startsWith('https://')) return path
-  return `http://localhost:3000${path.startsWith('/') ? '' : '/'}${path}`
-}
+const getImageUrl = mediaUrl
 
 const isVideo = (url: string | null) => {
   if (!url) return false
@@ -165,14 +163,14 @@ const handleToggleVisibility = async (comment: any) => {
 // --- GIỎ HÀNG ---
 const handleAddToCart = async () => {
   if (!selectedVariant.value) {
-    alert('Vui lòng chọn phân loại sản phẩm!')
+    notify.error('Vui lòng chọn phân loại sản phẩm!')
     return
   }
   const userJson = localStorage.getItem('user')
   const user = userJson ? JSON.parse(userJson) : null
   const currentUserId = user ? Number(user.id) : null
   if (!currentUserId) {
-    alert('Vui lòng đăng nhập để mua hàng!')
+    notify.info('Vui lòng đăng nhập để mua hàng!')
     return
   }
   isAdding.value = true
@@ -183,10 +181,10 @@ const handleAddToCart = async () => {
       quantity: Number(quantity.value),
     })
     window.dispatchEvent(new CustomEvent('cart-updated'))
-    alert('Thành công! Đã thêm vào giỏ hàng.')
+    notify.success('Đã thêm vào giỏ hàng.')
   } catch (error: any) {
     const message = error.response?.data?.message || 'Lỗi không xác định'
-    alert(Array.isArray(message) ? message.join('\n') : message)
+    notify.error(Array.isArray(message) ? message.join(' • ') : message)
   } finally {
     isAdding.value = false
   }
@@ -256,7 +254,13 @@ const fetchData = async () => {
 const getDiscountedPrice = (variant: any) => {
   if (!variant.promotionId) return variant.price
   const promo = promotions.value.find((p) => p.id === variant.promotionId)
-  if (!promo || !promo.isActive) return variant.price
+  if (
+    !promo ||
+    !promo.isActive ||
+    new Date(promo.startDate).getTime() > Date.now() ||
+    new Date(promo.endDate).getTime() < Date.now()
+  )
+    return variant.price
   let finalPrice = Number(variant.price)
   if (promo.discountType === 'PERCENT') finalPrice *= 1 - Number(promo.discountValue) / 100
   else if (promo.discountType === 'FIXED_AMOUNT') finalPrice -= Number(promo.discountValue)
@@ -494,7 +498,12 @@ watch(
             </div>
             <button
               @click="handleAddToCart"
-              :disabled="isAdding"
+              :disabled="
+                isAdding ||
+                !selectedVariant ||
+                selectedVariant.stock < 1 ||
+                product.status !== 'ACTIVE'
+              "
               class="w-full flex-1 bg-[#1e293b] hover:bg-black text-white font-black h-14 rounded-2xl flex items-center justify-center gap-3 transition-all uppercase tracking-widest text-sm"
             >
               {{ isAdding ? 'ĐANG XỬ LÝ...' : 'THÊM VÀO GIỎ' }}

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { mediaUrl } from '@/utils/media'
+import { effectivePrice } from '@/utils/pricing'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Cart } from '../service/cart.ts'
@@ -10,6 +12,8 @@ import { notify } from '@/utils/notifier.ts'
 const router = useRouter()
 const cartItems = ref<any[]>([])
 const loading = ref(false)
+const submitting = ref(false)
+const paymentMethods = ref<any[]>([])
 const selectedIds = ref<number[]>([])
 const accountId = ref<number | null>(null)
 const shippingInfo = ref({
@@ -27,16 +31,14 @@ const formatVND = (value: number) => {
 }
 
 const getImageUrl = (item: any) => {
-  if (!item) return 'https://placehold.co/400x400/eef2e6/658a22?text=No+Image'
+  if (!item) return mediaUrl()
   const path =
     item.variant?.image ||
     item.variant?.mainImage ||
     item.variant?.product?.mainImage ||
     item.product?.mainImage ||
     item.image
-  if (!path) return 'https://placehold.co/400x400/eef2e6/658a22?text=No+Image'
-  if (path.startsWith('http')) return path
-  return `http://localhost:3000${path.startsWith('/') ? '' : '/'}${path}`
+  return mediaUrl(path)
 }
 
 const syncHeaderCart = () => {
@@ -50,7 +52,7 @@ const selectedItems = computed(() =>
 
 const subtotal = computed(() => {
   return selectedItems.value.reduce((sum, item) => {
-    const price = item.price || item.variant?.price || item.product?.price || 0
+    const price = effectivePrice(item.variant)
     return sum + Number(price) * item.quantity
   }, 0)
 })
@@ -89,17 +91,6 @@ const loadCartData = async (userId: number) => {
     const cartRes = await Cart.getByUser(userId)
     let rawItems = Array.isArray(cartRes) ? cartRes : cartRes.data || []
 
-    for (let item of rawItems) {
-      const variantId = item.variantId || item.variant?.id
-      if (variantId) {
-        try {
-          const variantRes = await api.get(`/product-variant/${variantId}`)
-          item.variant = variantRes.data
-        } catch (e) {
-          console.warn(`Không lấy được variant ${variantId}`)
-        }
-      }
-    }
     cartItems.value = rawItems
     selectedIds.value = cartItems.value.map((item: any) => item.id)
     syncHeaderCart()
@@ -130,11 +121,25 @@ const fetchData = async () => {
 const handleSubmit = async () => {
   if (selectedItems.value.length === 0) return notify.error('Vui lòng chọn sản phẩm!')
 
+  if (submitting.value) return
+  if (
+    !shippingInfo.value.fullName.trim() ||
+    !/^[0-9+() .-]{9,20}$/.test(shippingInfo.value.phone) ||
+    !shippingInfo.value.address.trim()
+  ) {
+    return notify.error('Vui lòng nhập đầy đủ họ tên, số điện thoại và địa chỉ hợp lệ.')
+  }
+  submitting.value = true
   try {
+    const methods = await api.get('/payment-method')
+    paymentMethods.value = methods.data
+    const code = { cod: 'COD', momo: 'MOMO_DEMO', paypal: 'PAYPAL_DEMO' }[paymentMethod.value]
+    const method = paymentMethods.value.find((m: any) => m.code === code && m.isActive)
+    if (!method) throw new Error('Phương thức thanh toán chưa được cấu hình. Hãy chạy dữ liệu mẫu.')
     const orderPayload = {
       accountId: Number(accountId.value),
       shippingAddress: `${shippingInfo.value.fullName} - ${shippingInfo.value.phone} - ${shippingInfo.value.address}`,
-      paymentMethodId: paymentMethod.value === 'cod' ? 1 : 2,
+      paymentMethodId: method.id,
       items: selectedItems.value.map((item) => ({
         variantId: Number(item.variantId || item.variant?.id),
         quantity: Number(item.quantity),
@@ -155,17 +160,19 @@ const handleSubmit = async () => {
         router.push('/orders')
       } else {
         const ids = selectedIds.value.join(',')
-        const name = paymentMethod.value === 'momo' ? 'FakePaymentMoMo' : 'FakePaymentPayPal'
+        const name = paymentMethod.value === 'momo' ? 'demo-payment-momo' : 'demo-payment-paypal'
 
         router.push({
           name: name,
-          query: { orderId, amount: total.value, cartItemIds: ids },
+          query: { orderId, amount: Number(response.totalAmount), cartItemIds: ids },
         })
       }
     }
   } catch (error: any) {
     const errorMsg = error.response?.data?.message || error.message || 'Đặt hàng thất bại!'
     notify.error(Array.isArray(errorMsg) ? errorMsg[0] : errorMsg)
+  } finally {
+    submitting.value = false
   }
 }
 
@@ -360,7 +367,7 @@ onMounted(fetchData)
                 </p>
                 <div class="flex justify-between items-center mt-2">
                   <span class="font-black text-[#658a22] text-sm italic">{{
-                    formatVND(item.variant?.price || item.price || 0)
+                    formatVND(effectivePrice(item.variant))
                   }}</span>
 
                   <div
@@ -550,7 +557,7 @@ onMounted(fetchData)
 
           <button
             @click="handleSubmit"
-            :disabled="cartItems.length === 0 || selectedItems.length === 0"
+            :disabled="submitting || cartItems.length === 0 || selectedItems.length === 0"
             class="w-full mt-8 bg-[#1e293b] hover:bg-black text-white p-5 rounded-2xl font-black text-lg uppercase tracking-widest transition-all shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
           >
             XÁC NHẬN ĐẶT HÀNG <span class="opacity-50">|</span> {{ formatVND(total) }}

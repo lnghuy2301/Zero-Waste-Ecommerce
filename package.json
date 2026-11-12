@@ -1,0 +1,24 @@
+{
+  "name": "zero-waste-ecommerce",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local demo of a zero-waste shop with Vue, NestJS, PostgreSQL and EcoBot",
+  "scripts": {
+    "setup:env": "node scripts/setup-env.mjs",
+    "install:all": "npm --prefix backend ci && npm --prefix frontend ci",
+    "dev:backend": "npm --prefix backend run start:dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build": "npm --prefix backend run build && npm --prefix frontend run build",
+    "test": "npm --prefix backend test -- --runInBand",
+    "db:generate": "npm --prefix backend run db:generate",
+    "db:migrate": "npm --prefix backend run db:migrate",
+    "db:seed": "npm --prefix backend run db:seed",
+    "demo:smoke": "node scripts/smoke-demo.mjs",
+    "clean": "node scripts/clean.mjs",
+    "export:public": "node scripts/export-public.mjs",
+    "demo:mail-smoke": "node scripts/smoke-mail.mjs"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  }
+}

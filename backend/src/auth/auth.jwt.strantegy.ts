@@ -1,22 +1,33 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../../prisma/prisma.service';
+import { jwtSecret } from './jwt.config';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
+  constructor(
+    config: ConfigService,
+    private readonly prisma: PrismaService,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || '6f8d1c2a3b4e5f67890abcdef1234567890abcdef1234567890abcdef12345678 ',
+      secretOrKey: jwtSecret(config),
     });
   }
 
   async validate(payload: any) {
+    const id = Number(payload.sub || payload.id);
+    if (!Number.isSafeInteger(id) || id < 1) throw new UnauthorizedException();
+    const account = await this.prisma.account.findUnique({ where: { id } });
+    if (!account?.isActive)
+      throw new UnauthorizedException('Tài khoản không khả dụng');
     return {
-      id: payload.sub || payload.id || payload.userId,
-      username: payload.username,
-      role: payload.role,
+      id: account.id,
+      email: account.email,
+      role: account.role,
     };
   }
 }

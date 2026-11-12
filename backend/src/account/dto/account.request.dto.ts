@@ -1,9 +1,12 @@
 import {
   IsBoolean,
+  IsEmail,
   IsEnum,
-  IsNotEmpty, IsOptional,
+  IsNotEmpty,
+  IsOptional,
   IsString,
   MinLength,
+  MaxLength,
   ValidateNested,
 } from 'class-validator';
 import { Role } from '@prisma/client';
@@ -12,11 +15,13 @@ import { CustomerProfileRequestDto } from '../../customer_profile/dto/customer_p
 
 export class AccountRequestDto {
   @IsNotEmpty({ message: 'Email không được để trống' })
-  @IsString({ message: 'Email không đúng định dạng' })
+  @IsEmail({}, { message: 'Email không đúng định dạng' })
   email: string;
 
   @IsNotEmpty({ message: 'Password không được để trống' })
+  @IsString()
   @MinLength(8, { message: 'Mật khẩu tối thiểu 8 ký tự' })
+  @MaxLength(72)
   password: string;
 
   @IsNotEmpty({ message: 'Role không được để trống' })

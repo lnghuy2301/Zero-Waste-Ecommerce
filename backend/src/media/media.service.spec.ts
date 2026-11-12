@@ -1,60 +1,38 @@
 import {
+  BadRequestException,
   ForbiddenException,
-  Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { MediaService } from './media.service';
 
-@Injectable()
-export class MediaService {
-  constructor(private prisma: PrismaService) {}
-
-  async uploadReviewMedia(
-    userId: number,
-    commentId: number,
-    file: Express.Multer.File,
-  ) {
-    const comment = await this.prisma.comment.findUnique({
-      where: { id: commentId },
-    });
-    if (!comment) {
-      throw new NotFoundException('Không tìm thấy bình luận.');
-    }
-
-    if (comment.accountId !== userId) {
-      throw new ForbiddenException(
-        'Bạn không có quyền upload media cho bình luận này.',
-      );
-    }
-
-    const fileType = file.mimetype?.startsWith('image') ? 'IMAGE' : 'VIDEO';
-
-    return this.prisma.reviewMedia.create({
-      data: {
-        commentId,
-        url: `/uploads/${file.filename}`,
-        type: fileType,
+describe('review attachments', () => {
+  it('rejects an absent upload', async () => {
+    await expect(
+      new MediaService({} as any).uploadReviewMedia(1, 1, undefined as any),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+  it('prevents attaching files to another customer review', async () => {
+    const prisma = {
+      comment: { findUnique: jest.fn().mockResolvedValue({ accountId: 2 }) },
+      reviewMedia: { create: jest.fn() },
+    };
+    await expect(
+      new MediaService(prisma as any).uploadReviewMedia(1, 4, {
+        mimetype: 'image/png',
+      } as any),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.reviewMedia.create).not.toHaveBeenCalled();
+  });
+  it('does not delete another customer attachment', async () => {
+    const prisma = {
+      reviewMedia: {
+        findUnique: jest.fn().mockResolvedValue({ comment: { accountId: 2 } }),
+        delete: jest.fn(),
       },
-    });
-  }
-
-  async deleteReviewMedia(userId: number, mediaId: number) {
-    const media = await this.prisma.reviewMedia.findUnique({
-      where: { id: mediaId },
-      include: { comment: true },
-    });
-
-    if (!media) {
-      throw new NotFoundException('Không tìm thấy media.');
-    }
-
-    if (media.comment.accountId !== userId) {
-      throw new ForbiddenException('Bạn không có quyền xóa media này.');
-    }
-
-    // TODO: xóa file vật lý nếu cần (fs.unlinkSync)
-    await this.prisma.reviewMedia.delete({ where: { id: mediaId } });
-
-    return { message: 'Xóa media thành công.' };
-  }
-}
+    };
+    await expect(
+      new MediaService(prisma as any).deleteReviewMedia(1, 4),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.reviewMedia.delete).not.toHaveBeenCalled();
+  });
+});

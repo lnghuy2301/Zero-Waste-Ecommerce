@@ -17,6 +17,15 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CommentService } from './comment.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { GetCommentsFilterDto } from './dto/get-comments-filter.dto';
+import { RolesGuard } from '../auth/auth.role.guard';
+import { Roles } from '../auth/auth.role.decorator';
+import { Role } from '@prisma/client';
+import { IsBoolean } from 'class-validator';
+
+class VisibilityDto {
+  @IsBoolean()
+  isHidden: boolean;
+}
 
 @ApiTags('Comments')
 @Controller('comments')
@@ -59,11 +68,12 @@ export class CommentController {
 
   @Patch(':id/visibility')
   @ApiOperation({ summary: 'Admin thay đổi trạng thái ẩn/hiện bình luận' })
-  @UseGuards(AuthGuard('jwt')) // Mở ra nếu bạn muốn check token admin ở đây
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.ADMIN)
   async toggleVisibility(
     @Param('id', ParseIntPipe) id: number,
-    @Body('isHidden') isHidden: boolean,
+    @Body() body: VisibilityDto,
   ) {
-    return this.commentService.toggleVisibility(id, isHidden);
+    return this.commentService.toggleVisibility(id, body.isHidden);
   }
 }

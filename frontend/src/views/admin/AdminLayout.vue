@@ -130,10 +130,11 @@ const closeMenu = () => {
             <p class="text-sm font-semibold text-slate-700 leading-tight">{{ user?.email }}</p>
             <p class="text-[10px] uppercase font-bold text-emerald-600">Administrator</p>
           </div>
-          <img
-            :src="`https://ui-avatars.com/api/?name=${user?.email}&background=658a22&color=fff`"
-            class="w-9 h-9 rounded-full border-2 border-slate-100 shadow-sm"
-          />
+          <span
+            class="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-bold uppercase text-white"
+            aria-label="Tài khoản quản trị"
+            >{{ user?.email?.slice(0, 2) || 'AD' }}</span
+          >
         </div>
       </header>
 

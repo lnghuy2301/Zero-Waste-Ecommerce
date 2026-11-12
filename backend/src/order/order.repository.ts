@@ -1,309 +1,272 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OrderRequestDto } from './dto/order.request.dto';
 import { OrderResponseDto } from './dto/order.response.dto';
 import { DeleteListOrderDto } from './dto/delete-list-order.dto';
 import { plainToInstance } from 'class-transformer';
 import { Prisma, OrderStatus } from '@prisma/client';
+import { randomBytes } from 'crypto';
+
+const includeOrder = {
+  paymentMethod: true,
+  orderItems: { include: { variant: { include: { product: true } } } },
+} satisfies Prisma.OrderInclude;
+
+function toResponse(order: any): OrderResponseDto {
+  return plainToInstance(OrderResponseDto, {
+    ...order,
+    totalAmount: Number(order.totalAmount),
+    orderItems: order.orderItems.map((item) => ({
+      ...item,
+      price: Number(item.price),
+      variant: { ...item.variant, price: Number(item.variant.price) },
+    })),
+  });
+}
 
 @Injectable()
 export class OrderRepository {
   constructor(private prismaService: PrismaService) {}
 
   async createOrder(dto: OrderRequestDto): Promise<OrderResponseDto> {
-    // 1. Lấy thông tin giá và tồn kho của các variants trước khi bắt đầu transaction
-    const itemsWithDetails = await Promise.all(
-      dto.items.map(async (item) => {
-        const variant = await this.prismaService.productVariant.findUnique({
-          where: { id: item.variantId },
-          select: { price: true, stock: true, name: true }, // Lấy thêm stock và name
-        });
-        if (!variant)
-          throw new BadRequestException(
-            `Biến thể ${item.variantId} không tồn tại`,
-          );
-
-        // Kiểm tra tồn kho trước khi tạo
-        if (variant.stock < item.quantity) {
-          throw new BadRequestException(
-            `Sản phẩm "${variant.name}" chỉ còn ${variant.stock} cái, không đủ để đặt ${item.quantity} cái!`,
-          );
-        }
-
-        return {
-          variantId: item.variantId,
-          bundleId: item.bundleId,
-          quantity: item.quantity,
-          price: variant.price,
-        };
-      }),
-    );
-
-    // 2. Tính tổng số tiền
-    const totalAmount = itemsWithDetails.reduce(
-      (sum, item) => sum + Number(item.price) * item.quantity,
-      0,
-    );
-
-    // 3. Sử dụng Prisma Transaction để Tạo Đơn, Tạo Chi Tiết và Trừ Kho cùng lúc
-    const createdOrder = await this.prismaService.$transaction(async (tx) => {
-      // 3.1. Tạo đơn hàng và chi tiết đơn hàng
-      const order = await tx.order.create({
-        data: {
-          code: `ORD-${Date.now().toString().slice(-8)}${Math.floor(
-            Math.random() * 10000,
-          )
-            .toString()
-            .padStart(4, '0')}`,
-          accountId: dto.accountId,
-          totalAmount: new Prisma.Decimal(totalAmount.toFixed(2)),
-          status: 'PENDING' as OrderStatus,
-          shippingAddress: dto.shippingAddress,
-          paymentMethodId: dto.paymentMethodId,
-          orderItems: {
-            create: itemsWithDetails.map((item) => ({
-              variantId: item.variantId,
-              bundleId: item.bundleId,
-              quantity: item.quantity,
-              price: item.price,
-            })),
-          },
-        },
-        include: { orderItems: { include: { variant: true } } },
+    // Merge repeated IDs before stock checks to prevent bypassing per-item limits.
+    const quantities = new Map<number, number>();
+    for (const item of dto.items) {
+      const quantity = (quantities.get(item.variantId) || 0) + item.quantity;
+      if (quantity > 20)
+        throw new BadRequestException('Tối đa 20 sản phẩm mỗi biến thể');
+      quantities.set(item.variantId, quantity);
+    }
+    const order = await this.prismaService.$transaction(async (tx) => {
+      const payment = await tx.paymentMethod.findUnique({
+        where: { id: dto.paymentMethodId },
       });
-
-      // 3.2. Trừ tồn kho an toàn cho từng sản phẩm
-      for (const item of itemsWithDetails) {
-        await tx.productVariant.update({
-          where: { id: item.variantId },
-          data: {
-            stock: {
-              decrement: item.quantity,
-            },
-          },
+      if (!payment?.isActive)
+        throw new BadRequestException('Phương thức thanh toán không khả dụng');
+      const items: {
+        variantId: number;
+        quantity: number;
+        price: Prisma.Decimal;
+      }[] = [];
+      let subtotal = new Prisma.Decimal(0);
+      for (const [variantId, quantity] of [...quantities].sort(
+        (a, b) => a[0] - b[0],
+      )) {
+        const variant = await tx.productVariant.findUnique({
+          where: { id: variantId },
+          include: { product: true, promotion: true },
         });
+        if (!variant || variant.product.status !== 'ACTIVE') {
+          throw new BadRequestException('Sản phẩm không khả dụng');
+        }
+        // Conditional decrement is atomic even when two checkouts run together.
+        const reserved = await tx.productVariant.updateMany({
+          where: { id: variantId, stock: { gte: quantity } },
+          data: { stock: { decrement: quantity } },
+        });
+        if (reserved.count !== 1)
+          throw new ConflictException('Sản phẩm không đủ tồn kho');
+        let price = variant.price;
+        const promo = variant.promotion;
+        const now = new Date();
+        if (promo?.isActive && promo.startDate <= now && promo.endDate >= now) {
+          price =
+            promo.discountType === 'PERCENT'
+              ? price
+                  .mul(new Prisma.Decimal(100).minus(promo.discountValue))
+                  .div(100)
+              : price.minus(promo.discountValue);
+          price = Prisma.Decimal.max(0, price).toDecimalPlaces(2);
+        }
+        subtotal = subtotal.plus(price.mul(quantity));
+        items.push({ variantId, quantity, price });
       }
-
-      return order;
+      const shipping = subtotal.gte(500000) || subtotal.isZero() ? 0 : 30000;
+      return tx.order.create({
+        data: {
+          code: 'ORD-' + randomBytes(8).toString('hex'),
+          accountId: dto.accountId,
+          totalAmount: subtotal.plus(shipping),
+          status: OrderStatus.PENDING,
+          shippingAddress: dto.shippingAddress,
+          paymentMethodId: payment.id,
+          orderItems: { create: items },
+        },
+        include: includeOrder,
+      });
     });
-
-    // 4. Convert Decimal về number ở mọi level để tránh DecimalError
-    const transformedOrder = {
-      ...createdOrder,
-      totalAmount: Number(createdOrder.totalAmount),
-      orderItems: createdOrder.orderItems.map((oi) => ({
-        ...oi,
-        price: Number(oi.price),
-        variant: oi.variant
-          ? {
-              ...oi.variant,
-              price: Number(oi.variant.price),
-            }
-          : undefined,
-      })),
-    };
-
-    return plainToInstance(OrderResponseDto, transformedOrder);
+    return toResponse(order);
   }
 
   async updateOrderStatus(
     id: number,
     status: OrderStatus,
   ): Promise<OrderResponseDto> {
-    const updated = await this.prismaService.order.update({
-      where: { id },
-      data: { status },
-      include: { orderItems: { include: { variant: true } } },
+    if (status === OrderStatus.CANCELLED) return this.cancelOrder(id);
+    return this.prismaService.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({ where: { id } });
+      if (!order) throw new NotFoundException('Đơn hàng không tồn tại');
+      if (order.status === status)
+        return toResponse(
+          await tx.order.findUniqueOrThrow({
+            where: { id },
+            include: includeOrder,
+          }),
+        );
+      const allowed: Record<OrderStatus, OrderStatus[]> = {
+        PENDING: [OrderStatus.PAID, OrderStatus.SHIPPING],
+        PAID: [OrderStatus.SHIPPING],
+        SHIPPING: [OrderStatus.COMPLETED],
+        COMPLETED: [],
+        CANCELLED: [],
+      };
+      if (!allowed[order.status].includes(status))
+        throw new BadRequestException(
+          'Chuyển trạng thái đơn hàng không hợp lệ',
+        );
+      const result = await tx.order.updateMany({
+        where: { id, status: order.status },
+        data: { status },
+      });
+      if (result.count !== 1)
+        throw new ConflictException('Đơn hàng vừa thay đổi, vui lòng tải lại');
+      if (status === OrderStatus.COMPLETED) {
+        const items = await tx.orderDetail.findMany({
+          where: { orderId: id },
+          include: { variant: true },
+        });
+        for (const item of items) {
+          await tx.product.update({
+            where: { id: item.variant.productId },
+            data: { soLuongDaBan: { increment: item.quantity } },
+          });
+        }
+      }
+      return toResponse(
+        await tx.order.findUniqueOrThrow({
+          where: { id },
+          include: includeOrder,
+        }),
+      );
     });
+  }
 
-    const transformed = {
-      ...updated,
-      totalAmount: Number(updated.totalAmount),
-      orderItems: updated.orderItems.map((oi) => ({
-        ...oi,
-        price: Number(oi.price),
-        variant: oi.variant
-          ? {
-              ...oi.variant,
-              price: Number(oi.variant.price),
-            }
-          : undefined,
-      })),
-    };
+  async confirmDemoPayment(
+    id: number,
+    accountId: number,
+  ): Promise<OrderResponseDto> {
+    if (
+      process.env.DEMO_PAYMENTS !== 'true' ||
+      process.env.NODE_ENV === 'production'
+    ) {
+      throw new ForbiddenException('Thanh toán mô phỏng chưa được bật');
+    }
+    const order = await this.prismaService.order.findUnique({
+      where: { id },
+      include: { paymentMethod: true },
+    });
+    if (!order || order.accountId !== accountId) throw new ForbiddenException();
+    if (!['MOMO_DEMO', 'PAYPAL_DEMO'].includes(order.paymentMethod.code))
+      throw new BadRequestException('Đơn hàng không dùng thanh toán mô phỏng');
+    if (
+      order.status !== OrderStatus.PENDING &&
+      order.status !== OrderStatus.PAID
+    )
+      throw new BadRequestException('Đơn hàng không thể thanh toán');
+    return this.updateOrderStatus(id, OrderStatus.PAID);
+  }
 
-    return plainToInstance(OrderResponseDto, transformed);
+  async cancelOrder(id: number): Promise<OrderResponseDto> {
+    return this.prismaService.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id },
+        include: { orderItems: true },
+      });
+      if (!order) throw new NotFoundException('Đơn hàng không tồn tại');
+      if (order.status !== OrderStatus.PENDING)
+        throw new BadRequestException('Chỉ hủy đơn hàng đang chờ xử lý');
+      const updated = await tx.order.updateMany({
+        where: { id, status: OrderStatus.PENDING },
+        data: { status: OrderStatus.CANCELLED },
+      });
+      if (updated.count !== 1)
+        throw new ConflictException('Đơn hàng vừa thay đổi');
+      for (const item of order.orderItems) {
+        await tx.productVariant.update({
+          where: { id: item.variantId },
+          data: { stock: { increment: item.quantity } },
+        });
+      }
+      return toResponse(
+        await tx.order.findUniqueOrThrow({
+          where: { id },
+          include: includeOrder,
+        }),
+      );
+    });
   }
 
   async getOrdersByUser(accountId: number): Promise<OrderResponseDto[]> {
     const orders = await this.prismaService.order.findMany({
       where: { accountId },
-      include: { orderItems: { include: { variant: true } } },
+      include: includeOrder,
+      orderBy: { createdAt: 'desc' },
     });
-
-    return orders.map((order) => {
-      const transformed = {
-        ...order,
-        totalAmount: Number(order.totalAmount),
-        orderItems: order.orderItems.map((oi) => ({
-          ...oi,
-          price: Number(oi.price),
-          variant: oi.variant
-            ? {
-                ...oi.variant,
-                price: Number(oi.variant.price),
-              }
-            : undefined,
-        })),
-      };
-      return plainToInstance(OrderResponseDto, transformed);
-    });
+    return orders.map(toResponse);
   }
 
   async getOrderById(id: number): Promise<OrderResponseDto | null> {
     const order = await this.prismaService.order.findUnique({
       where: { id },
-      include: { orderItems: { include: { variant: true } } },
+      include: includeOrder,
     });
-
-    if (!order) return null;
-
-    const transformed = {
-      ...order,
-      totalAmount: Number(order.totalAmount),
-      orderItems: order.orderItems.map((oi) => ({
-        ...oi,
-        price: Number(oi.price),
-        variant: oi.variant
-          ? {
-              ...oi.variant,
-              price: Number(oi.variant.price),
-            }
-          : undefined,
-      })),
-    };
-
-    return plainToInstance(OrderResponseDto, transformed);
-  }
-
-  async cancelOrder(id: number): Promise<OrderResponseDto | null> {
-    // Sử dụng Transaction: Vừa chuyển trạng thái thành CANCELLED, vừa hoàn lại kho
-    const cancelledOrder = await this.prismaService.$transaction(async (tx) => {
-      // 1. Kiểm tra đơn hàng có tồn tại và chưa bị hủy không
-      const order = await tx.order.findUnique({
-        where: { id },
-        include: { orderItems: true },
-      });
-
-      if (!order) {
-        throw new BadRequestException('Đơn hàng không tồn tại');
-      }
-
-      if (order.status === 'CANCELLED') {
-        throw new BadRequestException('Đơn hàng này đã được hủy từ trước');
-      }
-
-      // 2. Chuyển trạng thái đơn hàng sang CANCELLED
-      const updatedOrder = await tx.order.update({
-        where: { id },
-        data: { status: 'CANCELLED' as OrderStatus },
-        include: { orderItems: { include: { variant: true } } },
-      });
-
-      // 3. HOÀN LẠI KHO (Cộng lại số lượng đã đặt vào tồn kho)
-      for (const item of order.orderItems) {
-        await tx.productVariant.update({
-          where: { id: item.variantId },
-          data: {
-            stock: {
-              increment: item.quantity, // Lệnh increment cộng dồn an toàn
-            },
-          },
-        });
-      }
-
-      return updatedOrder;
-    });
-
-    // 4. Trả về dữ liệu đã transform (Ép Decimal về Number để không lỗi JSON)
-    const transformed = {
-      ...cancelledOrder,
-      totalAmount: Number(cancelledOrder.totalAmount),
-      orderItems: cancelledOrder.orderItems.map((oi) => ({
-        ...oi,
-        price: Number(oi.price),
-        variant: oi.variant
-          ? {
-              ...oi.variant,
-              price: Number(oi.variant.price),
-            }
-          : undefined,
-      })),
-    };
-
-    return plainToInstance(OrderResponseDto, transformed);
-  }
-
-  async deleteListOrders(dto: DeleteListOrderDto): Promise<{ count: number }> {
-    const result = await this.prismaService.order.deleteMany({
-      where: { id: { in: dto.Ids } },
-    });
-    return { count: result.count };
-  }
-
-  async getOrderCount(): Promise<number> {
-    const count = await this.prismaService.order.count();
-    return count;
-  }
-
-  async getRevenueByMonth() {
-    const result = await this.prismaService.order.groupBy({
-      by: ['createdAt'],
-      where: {
-        status: 'COMPLETED',
-      },
-      _sum: {
-        totalAmount: true,
-      },
-    });
-
-    // Nhóm theo tháng (1-12)
-    const monthlyRevenue = Array(12).fill(0);
-
-    result.forEach((item) => {
-      const month = new Date(item.createdAt).getMonth(); // 0-11
-      monthlyRevenue[month] = Number(item._sum.totalAmount || 0);
-    });
-
-    return monthlyRevenue; // trả về mảng 12 số [tháng 1, tháng 2, ..., tháng 12]
+    return order ? toResponse(order) : null;
   }
 
   async getAllOrders(): Promise<OrderResponseDto[]> {
     const orders = await this.prismaService.order.findMany({
-      include: {
-        orderItems: {
-          include: { variant: true },
-        },
-      },
+      include: includeOrder,
       orderBy: { createdAt: 'desc' },
     });
+    return orders.map(toResponse);
+  }
 
-    return orders.map((order) => {
-      const transformed = {
-        ...order,
-        totalAmount: Number(order.totalAmount),
-        orderItems: order.orderItems.map((oi) => ({
-          ...oi,
-          price: Number(oi.price),
-          variant: oi.variant
-            ? {
-                ...oi.variant,
-                price: Number(oi.variant.price),
-              }
-            : undefined,
-        })),
-      };
-      return plainToInstance(OrderResponseDto, transformed);
+  async deleteListOrders(dto: DeleteListOrderDto): Promise<{ count: number }> {
+    // Pending orders reserve stock; never delete them outside the cancel workflow.
+    return this.prismaService.order.deleteMany({
+      where: {
+        id: { in: dto.Ids },
+        status: { in: [OrderStatus.CANCELLED, OrderStatus.COMPLETED] },
+      },
     });
+  }
+
+  async getOrderCount(): Promise<number> {
+    return this.prismaService.order.count();
+  }
+
+  async getRevenueByMonth() {
+    const year = new Date().getUTCFullYear();
+    const orders = await this.prismaService.order.findMany({
+      where: {
+        status: OrderStatus.COMPLETED,
+        createdAt: {
+          gte: new Date(Date.UTC(year, 0)),
+          lt: new Date(Date.UTC(year + 1, 0)),
+        },
+      },
+      select: { createdAt: true, totalAmount: true },
+    });
+    const monthly = Array<number>(12).fill(0);
+    for (const order of orders)
+      monthly[order.createdAt.getUTCMonth()] += Number(order.totalAmount);
+    return monthly;
   }
 
   async getStats() {
@@ -311,48 +274,32 @@ export class OrderRepository {
       totalUsers,
       totalOrders,
       totalProducts,
-      revenueResult,
-      allCompletedOrders, // Thay vì groupBy, ta lấy dữ liệu cần thiết để tự group
-      statusRaw,
+      revenue,
+      monthlyRevenue,
+      statuses,
     ] = await Promise.all([
       this.prismaService.account.count(),
       this.prismaService.order.count(),
       this.prismaService.product.count(),
       this.prismaService.order.aggregate({
-        where: { status: 'COMPLETED' },
+        where: { status: OrderStatus.COMPLETED },
         _sum: { totalAmount: true },
       }),
-      // Lấy danh sách tiền và ngày của các đơn đã hoàn thành
-      this.prismaService.order.findMany({
-        where: { status: 'COMPLETED' },
-        select: { totalAmount: true, createdAt: true },
-      }),
+      this.getRevenueByMonth(),
       this.prismaService.order.groupBy({
         by: ['status'],
         _count: { id: true },
       }),
     ]);
-
-    // Xử lý monthly revenue (CỘNG DỒN thay vì GÁN)
-    const monthlyRevenue = Array(12).fill(0);
-    allCompletedOrders.forEach((item) => {
-      const month = new Date(item.createdAt).getMonth(); // 0-11
-      // Sử dụng += để cộng dồn doanh thu vào tháng đó
-      monthlyRevenue[month] += Number(item.totalAmount || 0);
-    });
-
-    const statusCount: Record<string, number> = {};
-    statusRaw.forEach((item) => {
-      statusCount[item.status] = item._count.id;
-    });
-
     return {
       totalUsers,
       totalOrders,
       totalProducts,
-      totalRevenue: Number(revenueResult._sum.totalAmount || 0) as number, // Ép kiểu rõ ràng
-      monthlyRevenue: monthlyRevenue as number[],
-      statusCount,
+      totalRevenue: Number(revenue._sum.totalAmount || 0),
+      monthlyRevenue,
+      statusCount: Object.fromEntries(
+        statuses.map((s) => [s.status, s._count.id]),
+      ),
     };
   }
 }

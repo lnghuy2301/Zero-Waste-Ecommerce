@@ -32,6 +32,8 @@ export class AccountHelper {
   // SỬA TẠI ĐÂY: Cho phép Admin thao tác thoải mái
   async checkAdmin(id: number) {
     const account = await this.check_account(id);
+    if (account.role !== 'ADMIN')
+      throw new ForbiddenException('Bạn không có quyền quản trị');
     // Bỏ đoạn "if (account.role === 'ADMIN') throw ..."
     // Bây giờ Admin có thể xem/sửa Admin khác mà không bị chặn lỗi 400 nữa.
     return account;

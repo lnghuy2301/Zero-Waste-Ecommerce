@@ -1,4 +1,5 @@
 import api from './api.ts'
+import { API_BASE_URL } from '@/utils/media'
 
 export const Auth = {
   async Register(email: string, password: string, fullName: string) {
@@ -29,7 +30,7 @@ export const Auth = {
   },
 
   async LoginGoogle() {
-    window.location.href = 'http://localhost:3000/api/v1/auth/google'
+    window.location.href = `${API_BASE_URL}/auth/google`
   },
 
   saveToken(token: string) {

@@ -37,9 +37,6 @@ export class CategoryService {
 
   async getAllCategories(): Promise<CategoryResponseDto[]> {
     const categories = await this.categoryRepository.getAllCategories();
-    if (categories.length === 0) {
-      throw new BadRequestException('Không có danh mục nào tồn tại');
-    }
     return categories;
   }
 

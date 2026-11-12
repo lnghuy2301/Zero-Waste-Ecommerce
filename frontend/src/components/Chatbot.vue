@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { ref, watch, nextTick, computed } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import axios from 'axios'
-import { marked } from 'marked'
+import { mediaUrl } from '@/utils/media'
 
 // --- CẤU HÌNH API ---
 // Tạo một instance axios riêng cho chatbot để không bị lẫn với API của NestJS sau này
 const chatbotApi = axios.create({
-  baseURL: 'http://127.0.0.1:5000/api', // Trỏ đến server Flask
+  baseURL: import.meta.env.VITE_CHATBOT_URL || 'http://localhost:5000/api',
+  timeout: 20000,
 })
 
 // --- CÁC BIẾN TRẠNG THÁI ---
@@ -28,7 +29,7 @@ const messages = ref([
 // --- HÀM GỌI API THẬT ---
 const handleSendMessage = async () => {
   const userQuestion = userInput.value.trim()
-  if (!userQuestion) return
+  if (!userQuestion || isLoading.value) return
 
   // 1. Thêm tin nhắn của người dùng vào giao diện ngay lập tức
   messages.value.push({
@@ -55,8 +56,8 @@ const handleSendMessage = async () => {
     messages.value.push({
       id: Date.now() + 1,
       isUser: false,
-      text: botResponse.response,       // Văn bản đã được làm sạch
-      imageUrl: botResponse.image_url,  // URL hình ảnh (có thể rỗng)
+      text: botResponse.response, // Văn bản đã được làm sạch
+      imageUrl: botResponse.image_url, // URL hình ảnh (có thể rỗng)
     })
   } catch (error) {
     // Xử lý lỗi nếu API không gọi được
@@ -119,16 +120,16 @@ watch(
     >
       <div
         v-if="isOpen"
-        class="w-[360px] h-[520px] bg-white rounded-2xl shadow-2xl flex flex-col border border-slate-100"
+        class="w-[min(360px,calc(100vw-2.5rem))] h-[min(520px,calc(100dvh-3rem))] bg-white rounded-2xl shadow-2xl flex flex-col border border-slate-100"
+        role="dialog"
+        aria-label="EcoBot"
       >
         <!-- Header -->
         <div
           class="flex items-center justify-between p-4 bg-[#f8f9fa] border-b border-slate-100 rounded-t-2xl"
         >
           <div class="flex items-center gap-3">
-            <div
-              class="size-10 bg-[#eef4e6] rounded-full flex items-center justify-center"
-            >
+            <div class="size-10 bg-[#eef4e6] rounded-full flex items-center justify-center">
               <span class="material-symbols-outlined text-primary">smart_toy</span>
             </div>
             <div>
@@ -149,7 +150,12 @@ watch(
         </div>
 
         <!-- Vùng Hiển thị tin nhắn -->
-        <div ref="messagesContainer" class="flex-1 p-4 overflow-y-auto space-y-4">
+        <div
+          ref="messagesContainer"
+          class="flex-1 p-4 overflow-y-auto space-y-4"
+          role="log"
+          aria-live="polite"
+        >
           <div
             v-for="message in messages"
             :key="message.id"
@@ -167,16 +173,14 @@ watch(
               <p v-if="message.isUser" class="text-sm leading-relaxed">{{ message.text }}</p>
 
               <!-- Tin nhắn của bot: Hiển thị HTML được render từ Markdown -->
-              <div
-                v-else
-                class="text-sm leading-relaxed"
-                v-html="marked(message.text)"
-              ></div>
+              <div v-else class="text-sm leading-relaxed whitespace-pre-line break-words">
+                {{ message.text }}
+              </div>
 
               <!-- Hiển thị ảnh nếu API trả về link -->
               <img
                 v-if="message.imageUrl"
-                :src="message.imageUrl"
+                :src="mediaUrl(message.imageUrl)"
                 alt="Hình ảnh sản phẩm"
                 class="mt-2 rounded-lg max-w-full"
               />
@@ -185,13 +189,13 @@ watch(
 
           <!-- Dấu "..." khi bot đang gõ -->
           <div v-if="isLoading" class="flex justify-start">
-             <div class="p-3 rounded-2xl bg-slate-100 rounded-bl-lg">
-                <div class="flex items-center gap-1.5">
-                   <span class="size-2 bg-slate-300 rounded-full animate-pulse delay-0"></span>
-                   <span class="size-2 bg-slate-300 rounded-full animate-pulse delay-200"></span>
-                   <span class="size-2 bg-slate-300 rounded-full animate-pulse delay-400"></span>
-                </div>
-             </div>
+            <div class="p-3 rounded-2xl bg-slate-100 rounded-bl-lg">
+              <div class="flex items-center gap-1.5">
+                <span class="size-2 bg-slate-300 rounded-full animate-pulse delay-0"></span>
+                <span class="size-2 bg-slate-300 rounded-full animate-pulse delay-200"></span>
+                <span class="size-2 bg-slate-300 rounded-full animate-pulse delay-400"></span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -202,13 +206,16 @@ watch(
               v-model="userInput"
               type="text"
               placeholder="Hỏi EcoBot về sản phẩm..."
-              class="flex-1 px-4 py-2.5 bg-slate-100 border border-transparent rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm text-slate-900"
+              class="min-w-0 flex-1 px-4 py-2.5 bg-slate-100 border border-transparent rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm text-slate-900"
               autocomplete="off"
+              maxlength="1000"
+              aria-label="Câu hỏi cho EcoBot"
             />
             <button
               type="submit"
               class="size-11 bg-[#658a22] text-white rounded-xl flex items-center justify-center shadow-sm hover:bg-[#58791d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              :disabled="!userInput.trim()"
+              :disabled="!userInput.trim() || isLoading"
+              aria-label="Gửi câu hỏi"
             >
               <span class="material-symbols-outlined">send</span>
             </button>

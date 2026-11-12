@@ -19,6 +19,8 @@ export class ProductVariantService {
   async createVariant(
     dto: ProductVariantRequestDto,
   ): Promise<ProductVariantResponseDto> {
+    if (!Number.isInteger(dto.productId) || dto.productId < 1)
+      throw new BadRequestException('ID sản phẩm không hợp lệ');
     if (typeof dto.price !== 'number' || dto.price <= 0) {
       throw new BadRequestException('Giá phải là số dương hợp lệ');
     }
@@ -46,9 +48,6 @@ export class ProductVariantService {
 
   async getAllVariants(): Promise<ProductVariantResponseDto[]> {
     const variants = await this.productVariantRepository.getAllVariants();
-    if (variants.length === 0) {
-      throw new BadRequestException('Không có biến thể sản phẩm nào tồn tại');
-    }
     return variants;
   }
 

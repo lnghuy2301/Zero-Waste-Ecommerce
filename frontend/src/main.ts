@@ -1,10 +1,9 @@
 import './style.css'
 import { createApp } from 'vue'
-import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
-import Toast, { type PluginOptions, POSITION } from "vue-toastification";
-import "vue-toastification/dist/index.css";
+import Toast, { type PluginOptions, POSITION } from 'vue-toastification'
+import 'vue-toastification/dist/index.css'
 
 const app = createApp(App)
 
@@ -20,12 +19,11 @@ const options: PluginOptions = {
   draggablePercent: 0.6,
   showCloseButtonOnHover: false,
   hideProgressBar: false,
-  closeButton: "button",
+  closeButton: 'button',
   icon: true,
-  rtl: false
-};
+  rtl: false,
+}
 
-app.use(createPinia())
 app.use(router)
 app.use(Toast, options)
 app.mount('#app')

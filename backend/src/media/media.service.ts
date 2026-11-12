@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Express } from 'express';
+import { removeUpload } from './config/remove-upload';
 
 @Injectable()
 export class MediaService {
@@ -58,8 +59,8 @@ export class MediaService {
       throw new ForbiddenException('Bạn không có quyền xóa media này.');
     }
 
-    // TODO: xóa file vật lý nếu cần (fs.unlinkSync)
     await this.prisma.reviewMedia.delete({ where: { id: mediaId } });
+    await removeUpload(media.url);
 
     return { message: 'Xóa media thành công.' };
   }

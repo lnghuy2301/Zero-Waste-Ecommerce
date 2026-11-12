@@ -87,7 +87,6 @@ export class AccountService {
     updateisActive: UpdateActiveRequestDto,
   ): Promise<AccountResponseDto> {
     await this.accountHelper.check_account(id);
-    await this.accountHelper.checkAdmin(id);
     return this.accountRepository.updateActive(id, updateisActive);
   }
 
@@ -96,7 +95,6 @@ export class AccountService {
     updateRole: UpdateRoleRequesrDto,
   ): Promise<AccountResponseDto> {
     await this.accountHelper.check_account(id);
-    await this.accountHelper.checkAdmin(id);
     return this.accountRepository.updateRole(id, updateRole);
   }
 
@@ -159,91 +157,77 @@ export class AccountService {
 
   // 1. HÀM QUÊN MẬT KHẨU (Gửi mail)
   async forgotPassword(email: string) {
+    const message = 'Nếu email tồn tại, link khôi phục đã được gửi!';
+    if (!process.env.SMTP_HOST) return { message };
     const account = await this.prismaService.account.findUnique({
       where: { email },
     });
-
-    if (!account) {
-      // Để bảo mật, dù không có email cũng cứ báo thành công để hacker không dò được email
-      return { message: 'Nếu email tồn tại, link khôi phục đã được gửi!' };
+    if (!account?.isActive) return { message };
+    const token = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    await this.prismaService.account.update({
+      where: { email },
+      data: {
+        resetPasswordToken: hashedToken,
+        resetPasswordExpires: new Date(Date.now() + 15 * 60 * 1000),
+      },
+    });
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT || 1025),
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: process.env.SMTP_USER
+        ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD }
+        : undefined,
+      connectionTimeout: 5000,
+      socketTimeout: 10000,
+    });
+    const url = new URL(
+      '/reset-password',
+      process.env.FRONTEND_URL || 'http://localhost:5173',
+    );
+    url.search = new URLSearchParams({ token, email }).toString();
+    try {
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM || 'EcoStore Demo <demo@example.com>',
+        to: email,
+        subject: 'Khôi phục mật khẩu EcoStore',
+        text: 'Đặt lại mật khẩu trong 15 phút: ' + url.toString(),
+      });
+    } catch {
+      // Same response for unknown accounts and delivery failures; no token in logs.
+      console.warn(
+        'Password recovery email could not be delivered. Check SMTP settings.',
+      );
     }
+    return { message };
+  }
 
-    // Tạo token ngẫu nhiên
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    // Hash token để lưu vào DB (bảo mật hơn)
+  async resetPasswordWithToken(body: {
+    email: string;
+    token: string;
+    newPassword: string;
+  }) {
     const hashedToken = crypto
       .createHash('sha256')
-      .update(resetToken)
+      .update(body.token)
       .digest('hex');
-    // Set thời gian hết hạn (ví dụ 15 phút)
-    const expires = new Date(Date.now() + 15 * 60 * 1000);
-
-    // Lưu token vào DB
-    await this.prismaService.account.update({
-      where: { email },
-      data: {
-        resetPasswordToken: hashedToken,
-        resetPasswordExpires: expires,
-      },
-    });
-
-    // CẤU HÌNH GỬI MAIL (Thay bằng email thật của bồ sau nhé)
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: 'tphuc290923@gmail.com',
-        pass: 'alif fvzo illw ntvs',
-      },
-    });
-
-    // Link dẫn tới trang Vue Frontend của bồ (kèm theo token ở trên URL)
-    const resetUrl = `http://localhost:5173/reset-password?token=${resetToken}&email=${email}`;
-
-    await transporter.sendMail({
-      from: '"Zero Waste Ecommerce" <no-reply@zerowaste.com>',
-      to: email,
-      subject: 'Yêu cầu khôi phục mật khẩu',
-      html: `
-        <h3>Xin chào!</h3>
-        <p>Bạn vừa yêu cầu đặt lại mật khẩu. Vui lòng click vào link bên dưới để tạo mật khẩu mới:</p>
-        <a href="${resetUrl}" style="padding: 10px 15px; background: #658a22; color: white; text-decoration: none; border-radius: 5px;">Đặt lại mật khẩu</a>
-        <p><i>Link này sẽ hết hạn sau 15 phút. Nếu bạn không yêu cầu, vui lòng bỏ qua email này.</i></p>
-      `,
-    });
-
-    return { message: 'Link khôi phục đã được gửi vào email của bạn!' };
-  }
-
-  async resetPasswordWithToken(body: any) {
-    const { email, token, newPassword } = body;
-
-    // Hash lại cái token gửi từ Frontend để so với cái trong DB
-    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-    const account = await this.prismaService.account.findFirst({
+    const password = await bcrypt.hash(body.newPassword, 10);
+    // Consume token atomically: two simultaneous requests cannot both reuse it.
+    const result = await this.prismaService.account.updateMany({
       where: {
-        email: email,
+        email: body.email,
+        isActive: true,
         resetPasswordToken: hashedToken,
-        resetPasswordExpires: { gt: new Date() }, // Kiểm tra token còn hạn không
+        resetPasswordExpires: { gt: new Date() },
       },
+      data: { password, resetPasswordToken: null, resetPasswordExpires: null },
     });
-
-    if (!account) {
-      throw new BadRequestException('Token không hợp lệ hoặc đã hết hạn!');
-    }
-    const saltRounds = 10;
-    const hash_password = await bcrypt.hash(newPassword, saltRounds);
-
-    await this.prismaService.account.update({
-      where: { email },
-      data: {
-        password: hash_password,
-        resetPasswordToken: null, // Xóa token đi
-        resetPasswordExpires: null,
-      },
-    });
-
+    if (result.count !== 1)
+      throw new BadRequestException('Token không hợp lệ hoặc đã hết hạn');
     return { message: 'Đặt lại mật khẩu thành công! Bạn có thể đăng nhập.' };
   }
+
   async getTopCustomers(currentUser: any) {
     // Chỉ Admin mới được xem thống kê này
     await this.accountHelper.checkAdmin(currentUser.id);

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProductRequestDto } from './dto/product.request.dto';
 import { ProductResponseDto } from './dto/product.response.dto';
@@ -123,30 +123,38 @@ export class ProductRepository {
 
     const orderBy: any = { createdAt: 'desc' }; // mặc định mới nhất
 
-    if (sort === 'price_asc')
-      orderBy.price = 'asc'; // cần join variant nếu muốn sort giá
-    else if (sort === 'price_desc') orderBy.price = 'desc';
-    else if (sort === 'sold_desc') orderBy.soLuongDaBan = 'desc';
+    if (sort === 'sold_desc') orderBy.soLuongDaBan = 'desc';
     else if (sort === 'rating_desc') orderBy.danhGiaTrungBinh = 'desc';
 
-    return this.prismaService.product.findMany({
+    if (Object.keys(variantConditions).length)
+      where.variants = { some: variantConditions };
+    const products = await this.prismaService.product.findMany({
       where,
-      include: {
-        category: true,
-        greenCerts: true,
-        // Nếu muốn lọc/sort theo giá biến thể thì cần join variant
-        variants: variantConditions.price
-          ? {
-              where: variantConditions,
-              select: { price: true },
-            }
-          : true,
-      },
+      include: { category: true, greenCerts: true, variants: true },
       orderBy,
     });
+    if (sort === 'price_asc' || sort === 'price_desc') {
+      const minPriceOf = (product: (typeof products)[number]) =>
+        product.variants.length
+          ? Math.min(...product.variants.map((v) => Number(v.price)))
+          : Number.POSITIVE_INFINITY;
+      products.sort((a, b) =>
+        sort === 'price_asc'
+          ? minPriceOf(a) - minPriceOf(b)
+          : minPriceOf(b) - minPriceOf(a),
+      );
+    }
+    return products;
   }
 
   async deleteProduct(id: number): Promise<ProductResponseDto | null> {
+    const linked = await this.prismaService.orderDetail.count({
+      where: { variant: { productId: id } },
+    });
+    if (linked)
+      throw new BadRequestException(
+        'Sản phẩm đã có đơn hàng. Hãy chuyển sang INACTIVE để giữ lịch sử.',
+      );
     return this.prismaService.product.delete({
       where: { id },
       include: { category: true },
@@ -156,38 +164,15 @@ export class ProductRepository {
   async deleteListProducts(
     dto: DeleteListProductDto,
   ): Promise<{ count: number }> {
-    return this.prismaService.$transaction(async (prisma) => {
-      // 1. Xóa giỏ hàng liên quan đến biến thể của sản phẩm
-      await prisma.cart.deleteMany({
-        where: {
-          variant: {
-            productId: { in: dto.Ids },
-          },
-        },
-      });
-
-      // 2. Xóa chi tiết đơn hàng liên quan đến biến thể
-      await prisma.orderDetail.deleteMany({
-        where: {
-          variant: {
-            productId: { in: dto.Ids },
-          },
-        },
-      });
-
-      // 3. Xóa biến thể của sản phẩm
-      await prisma.productVariant.deleteMany({
-        where: {
-          productId: { in: dto.Ids },
-        },
-      });
-
-      // 4. Xóa sản phẩm
-      const result = await prisma.product.deleteMany({
-        where: { id: { in: dto.Ids } },
-      });
-
-      return { count: result.count };
+    const linked = await this.prismaService.orderDetail.count({
+      where: { variant: { productId: { in: dto.Ids } } },
+    });
+    if (linked)
+      throw new BadRequestException(
+        'Danh sách chứa sản phẩm đã có đơn hàng. Hãy chuyển sang INACTIVE.',
+      );
+    return this.prismaService.product.deleteMany({
+      where: { id: { in: dto.Ids } },
     });
   }
 

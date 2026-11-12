@@ -13,7 +13,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { OrderService } from './order.service';
-import { OrderRequestDto } from './dto/order.request.dto';
+import { OrderRequestDto, UpdateOrderStatusDto } from './dto/order.request.dto';
 import { OrderResponseDto } from './dto/order.response.dto';
 import { DeleteListOrderDto } from './dto/delete-list-order.dto';
 import { JwtAuthGuard } from '../auth/auth.jwt.guard';
@@ -25,6 +25,15 @@ import { ForbiddenException } from '@nestjs/common';
 @Controller('order')
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/demo-payment')
+  async confirmDemoPayment(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: any,
+  ) {
+    return this.orderService.confirmDemoPayment(id, req.user.id);
+  }
 
   // 1. CÁC ROUTE TẠO MỚI / THỐNG KÊ (STATIC ROUTES)
   @UseGuards(JwtAuthGuard)
@@ -87,7 +96,7 @@ export class OrderController {
   @Put(':id/status')
   async updateOrderStatus(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: { status: OrderStatus },
+    @Body() dto: UpdateOrderStatusDto,
   ): Promise<OrderResponseDto> {
     return this.orderService.updateOrderStatus(id, dto.status);
   }
@@ -117,7 +126,7 @@ export class OrderController {
     @Req() req: any,
   ): Promise<OrderResponseDto | null> {
     const userId = req.user.id;
-    return this.orderService.getOrderById(id, userId);
+    return this.orderService.getOrderById(id, userId, req.user.role);
   }
 
   @UseGuards(JwtAuthGuard)

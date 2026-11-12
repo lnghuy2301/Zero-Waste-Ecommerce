@@ -1,6 +1,7 @@
 import { Exclude, Expose } from 'class-transformer';
 import { Role } from '@prisma/client';
 
+@Exclude()
 export class AccountResponseDto {
   @Expose()
   id: number;

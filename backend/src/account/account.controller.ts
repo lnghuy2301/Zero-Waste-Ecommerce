@@ -25,6 +25,10 @@ import { RolesGuard } from '../auth/auth.role.guard';
 import { Roles } from '../auth/auth.role.decorator';
 import { Role } from '@prisma/client';
 import { GetUser } from '../auth/get-user.decorator';
+import {
+  ForgotPasswordDto,
+  PasswordRecoveryDto,
+} from './dto/password-recovery.dto';
 
 // Import thư viện upload file y chang Product
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -47,7 +51,11 @@ export class AccountController {
   @Roles(Role.ADMIN, Role.CUSTOMER)
   @Patch(':id/avatar')
   @UseInterceptors(
-    FileInterceptor('avatar', { storage: multerStorage, fileFilter }),
+    FileInterceptor('avatar', {
+      storage: multerStorage,
+      fileFilter,
+      limits: { fileSize: 10 * 1024 * 1024, files: 1 },
+    }),
   )
   async uploadAvatar(
     @Param('id', ParseIntPipe) id: number,
@@ -141,12 +149,12 @@ export class AccountController {
   }
 
   @Post('forgot-password')
-  async forgotPassword(@Body('email') email: string) {
-    return this.accountService.forgotPassword(email);
+  async forgotPassword(@Body() body: ForgotPasswordDto) {
+    return this.accountService.forgotPassword(body.email);
   }
 
   @Post('reset-password')
-  async resetPassword(@Body() body: any) {
+  async resetPassword(@Body() body: PasswordRecoveryDto) {
     return this.accountService.resetPasswordWithToken(body);
   }
 }

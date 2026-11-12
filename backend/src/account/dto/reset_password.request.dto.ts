@@ -1,12 +1,18 @@
-import { IsNotEmpty } from 'class-validator';
+import { IsString, MinLength, MaxLength } from 'class-validator';
 
 export class ResetPasswordRequestDto {
-  @IsNotEmpty()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(72)
   old_password: string;
 
-  @IsNotEmpty()
+  @IsString()
+  @MinLength(8)
+  @MaxLength(72)
   new_password: string;
 
-  @IsNotEmpty()
+  @IsString()
+  @MinLength(8)
+  @MaxLength(72)
   confirm_password: string;
 }

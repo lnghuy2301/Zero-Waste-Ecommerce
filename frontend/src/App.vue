@@ -19,7 +19,7 @@ const isAuthPage = computed(() => {
 
     <main
       class="flex-grow relative bg-cover bg-center bg-no-repeat transition-all duration-500"
-      :class="{ 'px-10': !isAuthPage }"
+      :class="{ 'px-0 sm:px-4': !isAuthPage }"
     >
       <div v-if="!isAuthPage" class="absolute inset-0 bg-white/80 z-0"></div>
 

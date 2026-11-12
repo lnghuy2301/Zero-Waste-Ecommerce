@@ -1,70 +1,79 @@
 <script setup lang="ts">
-import {RouterLink, useRouter} from 'vue-router'
-import {reactive, ref} from "vue";
-import auth from '../service/auth.ts';
-import {notify} from "@/utils/notifier.ts";
+import { RouterLink, useRouter } from 'vue-router'
+import { reactive, ref } from 'vue'
+import auth from '../service/auth.ts'
+import { notify } from '@/utils/notifier.ts'
 
-  const router = useRouter();
-  const showPassword = ref(false);
-  const showConfirmPassword = ref(false);
-  const data = {
-    email: '',
-    password: '',
-    confirmPassword: '',
-    fullName: '',
+const router = useRouter()
+const showPassword = ref(false)
+const showConfirmPassword = ref(false)
+const data = {
+  email: '',
+  password: '',
+  confirmPassword: '',
+  fullName: '',
+}
+
+const form = reactive({ data })
+const error = ref()
+
+const handleSubmit = async () => {
+  error.value = ''
+
+  if (form.data.confirmPassword.length >= 8) {
+    if (form.data.password !== form.data.confirmPassword) {
+      notify.error('Mật khẩu xác nhận không trùng khớp!')
+      return
+    }
+  } else {
+    notify.error('Mật khẩu xác nhận tối thiểu 8 ký tự trở lên')
+    return
   }
 
-  console.log(data.password, data.confirmPassword);
-
-  const form = reactive({data});
-  const error = ref();
-
-    const handleSubmit = async() => {
-      error.value = '';
-
-      if(form.data.confirmPassword.length >= 8) {
-        if (form.data.password !== form.data.confirmPassword) {
-          notify.error("Mật khẩu xác nhận không trùng khớp!");
-          return;
-        }
-      }else{
-        notify.error("Mật khẩu xác nhận tối thiểu 8 ký tự trở lên");
-        return;
-      }
-
-      try {
-        const response = await auth.Register(form.data.email, form.data.password, form.data.fullName);
-        if(response){
-          notify.success("Đăng ký thành công!");
-          setTimeout(() => {
-            router.push('/login');
-          }, 1000);
-        }
-      }catch (err: any) {
-        let message = err.response?.data?.message || 'Lỗi hệ thống';
-        if (Array.isArray(message)) {
-          message = message.join(', '); // Nối các lỗi lại thành 1 chuỗi để hiện lên Toast
-        }
-        notify.error(message);
-      }
+  try {
+    const response = await auth.Register(form.data.email, form.data.password, form.data.fullName)
+    if (response) {
+      notify.success('Đăng ký thành công!')
+      setTimeout(() => {
+        router.push('/login')
+      }, 1000)
+    }
+  } catch (err: any) {
+    let message = err.response?.data?.message || 'Lỗi hệ thống'
+    if (Array.isArray(message)) {
+      message = message.join(', ') // Nối các lỗi lại thành 1 chuỗi để hiện lên Toast
+    }
+    notify.error(message)
   }
-
+}
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-white via-white to-[#eef4e6] relative overflow-hidden">
+  <div
+    class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-white via-white to-[#eef4e6] relative overflow-hidden"
+  >
     <!-- Abstract nature-inspired background elements -->
     <div class="absolute inset-0 nature-pattern opacity-30 pointer-events-none"></div>
     <div class="absolute -top-24 -left-24 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
     <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
 
-    <div class="w-full max-w-[480px] bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] overflow-hidden border border-slate-100 z-10">
+    <div
+      class="w-full max-w-[480px] bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] overflow-hidden border border-slate-100 z-10"
+    >
       <!-- Header / Hero Image -->
       <div class="relative h-32 bg-[#eef4e6] overflow-hidden">
-        <div class="absolute inset-0 bg-cover bg-center opacity-40" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBSrJUTWpk_aPbmO0pbIhZC4unyGMw2v5uM7WUy7Xd2yNgrR0uFyd30_UlBHpOoPtsPQ1hUtGmznwgBme3JB9p539N2a52brp9J9VNM2A2knR0VD790y5WUe3sdiX9RaFII14BVm4TFS32sLIWEPmKWa-bNkxS1aeCZzIM1qHKUD7sQ0p32NAZArNqMmMCLaSSr8b9MkKwuiTiT3NnzZaDIyz-KGTkHlGsCW-HQHW4sceXe9ZdbajBFoHyxRqp2VzmH1tVRojPt3V0')"></div>
+        <div
+          class="absolute inset-0 bg-cover bg-center opacity-40"
+          style="
+            background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBSrJUTWpk_aPbmO0pbIhZC4unyGMw2v5uM7WUy7Xd2yNgrR0uFyd30_UlBHpOoPtsPQ1hUtGmznwgBme3JB9p539N2a52brp9J9VNM2A2knR0VD790y5WUe3sdiX9RaFII14BVm4TFS32sLIWEPmKWa-bNkxS1aeCZzIM1qHKUD7sQ0p32NAZArNqMmMCLaSSr8b9MkKwuiTiT3NnzZaDIyz-KGTkHlGsCW-HQHW4sceXe9ZdbajBFoHyxRqp2VzmH1tVRojPt3V0');
+          "
+        ></div>
         <div class="absolute inset-0 bg-gradient-to-t from-white to-transparent"></div>
         <div class="absolute bottom-4 left-0 right-0 flex justify-center">
-          <RouterLink to="/" class="flex items-center gap-2 px-5 py-2 bg-white rounded-full shadow-sm">
+          <RouterLink
+            to="/"
+            class="flex items-center gap-2 px-5 py-2 bg-white rounded-full shadow-sm"
+          >
             <span class="material-symbols-outlined text-primary">eco</span>
             <span class="font-bold tracking-tight text-primary">Zero-Waste Store</span>
           </RouterLink>
@@ -80,7 +89,6 @@ import {notify} from "@/utils/notifier.ts";
 
         <!-- Form -->
         <form class="space-y-5" @submit.prevent="handleSubmit">
-
           <div>
             <label class="block text-sm font-medium mb-1.5 text-slate-700">Họ và Tên</label>
             <input
@@ -120,9 +128,9 @@ import {notify} from "@/utils/notifier.ts";
                 @click="showPassword = !showPassword"
                 class="absolute right-3 text-slate-400 hover:text-[#658a22] transition-colors flex items-center"
               >
-              <span class="material-symbols-outlined text-[20px]">
-                {{ showPassword ? 'visibility_off' : 'visibility' }}
-              </span>
+                <span class="material-symbols-outlined text-[20px]">
+                  {{ showPassword ? 'visibility_off' : 'visibility' }}
+                </span>
               </button>
             </div>
           </div>
@@ -142,15 +150,18 @@ import {notify} from "@/utils/notifier.ts";
                 @click="showConfirmPassword = !showConfirmPassword"
                 class="absolute right-3 text-slate-400 hover:text-[#658a22] transition-colors flex items-center"
               >
-              <span class="material-symbols-outlined text-[20px]">
-                {{ showConfirmPassword ? 'visibility_off' : 'visibility' }}
-              </span>
+                <span class="material-symbols-outlined text-[20px]">
+                  {{ showConfirmPassword ? 'visibility_off' : 'visibility' }}
+                </span>
               </button>
             </div>
           </div>
 
           <!-- Primary Button -->
-          <button type="submit" class="w-full bg-[#658a22] hover:bg-[#58791d] text-white font-semibold py-3.5 rounded-xl shadow-sm transition-all transform active:scale-[0.98] mt-2">
+          <button
+            type="submit"
+            class="w-full bg-[#658a22] hover:bg-[#58791d] text-white font-semibold py-3.5 rounded-xl shadow-sm transition-all transform active:scale-[0.98] mt-2"
+          >
             Tạo Tài Khoản
           </button>
 
@@ -166,13 +177,17 @@ import {notify} from "@/utils/notifier.ts";
         <div class="mt-8 text-center">
           <p class="text-sm text-slate-500">
             Đã có tài khoản?
-            <RouterLink to="/login" class="text-[#658a22] font-semibold hover:underline ml-1">Đăng Nhập</RouterLink>
+            <RouterLink to="/login" class="text-[#658a22] font-semibold hover:underline ml-1"
+              >Đăng Nhập</RouterLink
+            >
           </p>
         </div>
       </div>
 
       <!-- Footer Info -->
-      <div class="bg-slate-50 px-8 py-5 flex justify-between items-center text-[10px] uppercase tracking-widest text-slate-400 border-t border-slate-100 font-semibold">
+      <div
+        class="bg-slate-50 px-8 py-5 flex justify-between items-center text-[10px] uppercase tracking-widest text-slate-400 border-t border-slate-100 font-semibold"
+      >
         <span>Sống Bền Vững</span>
         <div class="flex gap-4">
           <a href="#" class="hover:text-slate-600 transition-colors">Bảo mật</a>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { mediaUrl } from '@/utils/media'
 import { ref, onMounted, watch, computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import api from '@/service/api.ts'
@@ -9,9 +10,10 @@ const variantMap = ref<Map<number, any[]>>(new Map())
 const promotions = ref<any[]>([])
 const greenCerts = ref<any[]>([])
 const loading = ref(true)
+const loadError = ref('')
 const route = useRoute()
 const router = useRouter()
-const searchQuery = ref('')
+const searchQuery = ref(String(route.query.search || ''))
 
 const selectedVariants = ref<Map<number, any>>(new Map())
 const sortOption = ref('newest')
@@ -32,10 +34,7 @@ const maxPriceInput = ref<number | null>(null)
 // --- STATE QUẢN LÝ MENU DANH MỤC ---
 const isCategoryOpen = ref(false)
 
-const getImageUrl = (path: string | null) => {
-  if (!path) return 'https://via.placeholder.com/300x300?text=Không+có+ảnh'
-  return `http://localhost:3000${path.startsWith('/') ? '' : '/'}${path}`
-}
+const getImageUrl = mediaUrl
 
 const fetchCategories = async () => {
   try {
@@ -48,6 +47,7 @@ const fetchCategories = async () => {
 
 const fetchProducts = async () => {
   loading.value = true
+  loadError.value = ''
   try {
     const categoryId = route.query.category
     let url = '/product'
@@ -61,7 +61,7 @@ const fetchProducts = async () => {
       api.get('/green-certificate'),
     ])
 
-    products.value = prodRes.data || []
+    products.value = (prodRes.data || []).filter((p: any) => p.status === 'ACTIVE')
     const allVariants = variantRes.data || []
     const soldVariants = soldVarRes.data || []
 
@@ -93,7 +93,7 @@ const fetchProducts = async () => {
     variantMap.value = map
     currentPage.value = 1
   } catch (e) {
-    console.error('Lỗi lấy sản phẩm:', e)
+    loadError.value = 'Không tải được sản phẩm. Vui lòng kiểm tra API hoặc thử lại.'
   } finally {
     loading.value = false
   }
@@ -218,7 +218,13 @@ const getDiscountedPrice = (variant: any) => {
   if (!variant.promotionId) return Number(variant.price)
 
   const promo = promotions.value.find((p) => p.id === variant.promotionId)
-  if (!promo || !promo.isActive) return Number(variant.price)
+  if (
+    !promo ||
+    !promo.isActive ||
+    new Date(promo.startDate).getTime() > Date.now() ||
+    new Date(promo.endDate).getTime() < Date.now()
+  )
+    return Number(variant.price)
 
   let finalPrice = Number(variant.price)
   if (promo.discountType === 'PERCENT') {
@@ -486,6 +492,9 @@ onMounted(() => {
           <p class="font-bold text-sm uppercase tracking-widest">Đang tải...</p>
         </div>
 
+        <div v-else-if="loadError" role="alert" class="rounded-xl bg-amber-50 p-6 text-amber-900">
+          {{ loadError }} <button @click="fetchProducts" class="ml-2 underline">Thử lại</button>
+        </div>
         <!-- Không có sản phẩm -->
         <div
           v-else-if="paginatedProducts.length === 0"

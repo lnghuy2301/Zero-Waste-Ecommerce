@@ -1,0 +1,70 @@
+name: Verify demo
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      mail:
+        image: axllent/mailpit:v1.27
+        ports: ["1025:1025", "8025:8025"]
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci_demo_password
+          POSTGRES_DB: ZeroWasteDemo
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d ZeroWasteDemo"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgresql://postgres:ci_demo_password@127.0.0.1:5432/ZeroWasteDemo?schema=public
+      JWT_SECRET: ci-only-demo-secret-do-not-use-outside-tests-123456789
+      DEMO_PAYMENTS: "true"
+      NODE_ENV: development
+      SMTP_HOST: 127.0.0.1
+      SMTP_PORT: "1025"
+      GOOGLE_CLIENT_ID: ""
+      GOOGLE_CLIENT_SECRET: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: chatbot/requirements.txt
+      - run: npm run install:all
+      - run: npm run db:generate
+      - run: npm run build
+      - run: npm test
+      - run: npm --prefix backend run test:e2e -- --runInBand
+      - run: python -m pip install -r chatbot/requirements.txt
+      - run: python -m unittest discover -s chatbot -p "test_*.py" -v
+      - run: npm run db:migrate
+      - run: npm run db:seed
+      - name: Check seed can run twice
+        run: npm run db:seed
+      - name: Check API with PostgreSQL
+        run: |
+          npm --prefix backend run start:prod > /tmp/zero-waste-api.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3000/api/v1/health; then break; fi
+            sleep 1
+          done
+          npm run demo:smoke
+          npm run demo:mail-smoke
+      - name: Production dependency audit
+        run: |
+          npm --prefix backend audit --omit=dev --audit-level=high
+          npm --prefix frontend audit --omit=dev --audit-level=high

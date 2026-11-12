@@ -1,13 +1,19 @@
 import api from './api.ts'
 
-export const Cart = {
+interface CartPayload {
+  accountId: number
+  variantId: number
+  quantity: number
+  bundleId?: number
+}
 
-  async create(payload: { productId: number; quantity: number }) {
+export const Cart = {
+  async create(payload: CartPayload) {
     const response = await api.post('/cart', payload)
     return response.data
   },
 
-  async update(id: number, payload: { productId: number; quantity: number }) {
+  async update(id: number, payload: CartPayload) {
     const response = await api.put(`/cart/${id}`, payload)
     return response.data
   },
@@ -30,11 +36,11 @@ export const Cart = {
   async deleteList(ids: number[]) {
     const response = await api.delete('/cart', {
       data: {
-        Ids: ids
-      }
+        Ids: ids,
+      },
     })
     return response.data
-  }
+  },
 }
 
-export default Cart;
+export default Cart

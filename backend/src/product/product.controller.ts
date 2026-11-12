@@ -14,6 +14,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
+import { ProductQueryDto } from './dto/product-query.dto';
 import { ProductRequestDto } from './dto/product.request.dto';
 import { ProductResponseDto } from './dto/product.response.dto';
 import { DeleteListProductDto } from './dto/list_product_delete.dto';
@@ -57,30 +58,27 @@ export class ProductController {
 
   @Get()
   async getAllProducts(
-    @Query('categoryId', new ParseIntPipe({ optional: true }))
-    categoryId?: number,
-    @Query('search') search?: string, // ← THÊM DÒNG NÀY
-
-    // === LỌC MỚI ===
-    @Query('minPrice') minPrice?: string,
-    @Query('maxPrice') maxPrice?: string,
-    @Query('material') material?: string,
-    @Query('greenCertId', new ParseIntPipe({ optional: true }))
-    greenCertId?: number,
-    @Query('minEco') minEco?: string,
-    @Query('minRating') minRating?: string,
-    @Query('sort') sort?: string, // newest | price_asc | price_desc | sold_desc | rating_desc
+    @Query() query: ProductQueryDto,
   ): Promise<ProductResponseDto[]> {
+    if (
+      query.minPrice !== undefined &&
+      query.maxPrice !== undefined &&
+      query.minPrice > query.maxPrice
+    ) {
+      throw new BadRequestException(
+        'Giá tối thiểu không được lớn hơn giá tối đa',
+      );
+    }
     return this.productService.getAllProducts(
-      search,
-      categoryId,
-      minPrice ? Number(minPrice) : undefined,
-      maxPrice ? Number(maxPrice) : undefined,
-      material,
-      greenCertId,
-      minEco ? Number(minEco) : undefined,
-      minRating ? Number(minRating) : undefined,
-      sort,
+      query.search,
+      query.categoryId,
+      query.minPrice,
+      query.maxPrice,
+      query.material,
+      query.greenCertId,
+      query.minEco,
+      query.minRating,
+      query.sort,
     );
   }
 
@@ -106,7 +104,11 @@ export class ProductController {
   @Roles(Role.ADMIN)
   @Post(':id/image')
   @UseInterceptors(
-    FileInterceptor('image', { storage: multerStorage, fileFilter }),
+    FileInterceptor('image', {
+      storage: multerStorage,
+      fileFilter,
+      limits: { fileSize: 10 * 1024 * 1024, files: 1 },
+    }),
   )
   async uploadMainImage(
     @Param('id', ParseIntPipe) id: number,

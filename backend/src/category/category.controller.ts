@@ -31,7 +31,11 @@ export class CategoryController {
   @Roles(Role.ADMIN)
   @Post()
   @UseInterceptors(
-    FileInterceptor('image', { storage: multerStorage, fileFilter }),
+    FileInterceptor('image', {
+      storage: multerStorage,
+      fileFilter,
+      limits: { fileSize: 10 * 1024 * 1024, files: 1 },
+    }),
   )
   async create(
     @Body() category: CategoryRequestDto,
@@ -44,7 +48,11 @@ export class CategoryController {
   @Roles(Role.ADMIN)
   @Put(':id/category')
   @UseInterceptors(
-    FileInterceptor('image', { storage: multerStorage, fileFilter }),
+    FileInterceptor('image', {
+      storage: multerStorage,
+      fileFilter,
+      limits: { fileSize: 10 * 1024 * 1024, files: 1 },
+    }),
   )
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -82,7 +90,11 @@ export class CategoryController {
   @Roles(Role.ADMIN)
   @Post(':id/image')
   @UseInterceptors(
-    FileInterceptor('image', { storage: multerStorage, fileFilter }),
+    FileInterceptor('image', {
+      storage: multerStorage,
+      fileFilter,
+      limits: { fileSize: 10 * 1024 * 1024, files: 1 },
+    }),
   )
   async uploadImage(
     @Param('id', ParseIntPipe) id: number,

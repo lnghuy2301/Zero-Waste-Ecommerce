@@ -4,7 +4,6 @@ import { CustomerProfileService } from './customer_profile.service';
 import { CustomerProfileHelper } from './customer_profile.helper';
 import { CustomerProfileRepository } from './customer_profile.repository';
 import { AccountRepository } from '../account/account.repository';
-import { PrismaService } from '../../prisma/prisma.service';
 import { AccountHelper } from '../account/account.helper';
 import { CustomerProfileController } from './customer_profile.controller';
 
@@ -14,7 +13,6 @@ import { CustomerProfileController } from './customer_profile.controller';
     AccountService,
     AccountRepository,
     AccountHelper,
-    PrismaService,
     CustomerProfileService,
     CustomerProfileHelper,
     CustomerProfileRepository,
@@ -23,7 +21,6 @@ import { CustomerProfileController } from './customer_profile.controller';
     AccountService,
     AccountRepository,
     AccountHelper,
-    PrismaService,
     CustomerProfileService,
     CustomerProfileHelper,
     CustomerProfileRepository,

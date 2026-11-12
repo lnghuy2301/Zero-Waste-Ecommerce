@@ -174,7 +174,6 @@ model Account {
   carts             Cart[]
   orders            Order[]
   comments          Comment[]
-  customerProfileId Int?
 
   @@map("TAI_KHOAN")
 }

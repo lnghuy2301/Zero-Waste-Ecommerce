@@ -1,34 +1,53 @@
-import { IsInt, IsNotEmpty, IsString, Min, IsOptional } from 'class-validator';
-// import { OrderStatus } from '@prisma/client';
-export class OrderRequestDto {
-  @IsNotEmpty({ message: 'ID tài khoản không được bỏ trống' })
+import { Type } from 'class-transformer';
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
+  IsInt,
+  IsNotEmpty,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+  ValidateNested,
+  IsEnum,
+} from 'class-validator';
+import { OrderStatus } from '@prisma/client';
+
+export class OrderDetailRequestDto {
   @IsInt()
+  @Min(1)
+  variantId: number;
+
+  @IsInt()
+  @Min(1)
+  @Max(20)
+  quantity: number;
+}
+
+export class OrderRequestDto {
+  @IsInt()
+  @Min(1)
   accountId: number;
 
-  @IsNotEmpty({ message: 'Địa chỉ giao hàng không được bỏ trống' })
   @IsString()
+  @IsNotEmpty()
+  @MaxLength(500)
   shippingAddress: string;
 
-  @IsNotEmpty({ message: 'ID phương thức thanh toán không được bỏ trống' })
   @IsInt()
+  @Min(1)
   paymentMethodId: number;
 
-  // Danh sách chi tiết đơn hàng (items)
-  @IsNotEmpty({ message: 'Danh sách sản phẩm không được bỏ trống' })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(100)
+  @ValidateNested({ each: true })
+  @Type(() => OrderDetailRequestDto)
   items: OrderDetailRequestDto[];
 }
 
-export class OrderDetailRequestDto {
-  @IsNotEmpty({ message: 'ID biến thể không được bỏ trống' })
-  @IsInt()
-  variantId: number;
-
-  @IsOptional()
-  @IsInt()
-  bundleId?: number;
-
-  @IsNotEmpty({ message: 'Số lượng không được bỏ trống' })
-  @IsInt()
-  @Min(1)
-  quantity: number;
+export class UpdateOrderStatusDto {
+  @IsEnum(OrderStatus)
+  status: OrderStatus;
 }

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { mediaUrl } from '@/utils/media'
 import { ref, onMounted, watch } from 'vue'
 import ProductService from '@/service/product.ts'
 import ProductVariantService from '@/service/productVariant.ts'
@@ -146,16 +147,6 @@ const confirmApplyPromotion = async (promotionId: number) => {
 const products = ref<any[]>([])
 // Các biến cho Phân trang và Lọc
 // === PHÂN TRANG & LỌC ===
-const currentPage = ref(1)
-const itemsPerPage = 10
-const totalItems = ref(0)
-
-const filters = ref({
-  search: '', // tìm theo tên sản phẩm
-  categoryId: '', // lọc theo danh mục
-  fromDate: '', // từ ngày tạo
-  toDate: '', // đến ngày tạo
-})
 const searchQuery = ref('') // ← thêm dòng này
 
 const variants = ref<any[]>([])
@@ -389,12 +380,7 @@ const loadData = async () => {
   loading.value = true
   try {
     const params = {
-      page: currentPage.value,
-      limit: itemsPerPage,
       search: searchQuery.value.trim() || undefined,
-      categoryId: filters.value.categoryId || undefined,
-      fromDate: filters.value.fromDate || undefined,
-      toDate: filters.value.toDate || undefined,
     }
 
     const [prodRes, varRes, soldProdRes, soldVarRes, catRes, promoRes, greenRes] =
@@ -411,7 +397,6 @@ const loadData = async () => {
     // Xử lý danh sách sản phẩm
     const productData = prodRes.data || prodRes
     products.value = Array.isArray(productData) ? productData : productData.items || []
-    totalItems.value = productData.total || products.value.length
 
     // Gán dữ liệu đã bán + doanh thu cho sản phẩm
     const soldProducts = soldProdRes.data || soldProdRes
@@ -604,7 +589,14 @@ const deleteSelectedVariants = async () => {
 }
 
 const resetProductForm = () => {
-  newProduct.value = { name: '', slug: '', categoryId: 1, description: '', material: '' }
+  newProduct.value = {
+    name: '',
+    slug: '',
+    categoryId: categories.value[0]?.id || 1,
+    description: '',
+    material: '',
+    greenCertId: null,
+  }
 }
 
 const resetVariantForm = () => {
@@ -619,7 +611,6 @@ const openVariantModal = (productId: number) => {
 onMounted(loadData)
 // Tự động tải lại khi gõ tìm kiếm
 watch(searchQuery, () => {
-  currentPage.value = 1
   loadData()
 })
 </script>
@@ -732,7 +723,7 @@ watch(searchQuery, () => {
         <div class="flex items-center gap-6">
           <img
             v-if="product.mainImage"
-            :src="`http://localhost:3000${product.mainImage}`"
+            :src="mediaUrl(product.mainImage)"
             class="w-24 h-24 object-cover rounded-3xl border-2 border-slate-50 shadow-sm"
           />
           <div

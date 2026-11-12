@@ -12,6 +12,7 @@ import { AccountService } from '../account/account.service';
 import { AccountRequestDto } from '../account/dto/account.request.dto';
 import { plainToInstance } from 'class-transformer';
 import { AccountHelper } from '../account/account.helper';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -71,9 +72,7 @@ export class AuthService {
     });
 
     if (!account) {
-      const randomPassword =
-        Math.random().toString(36).slice(-8) +
-        Math.random().toString(36).slice(-8);
+      const randomPassword = randomBytes(32).toString('hex');
       const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
       account = await this.prismaService.account.create({
@@ -90,6 +89,8 @@ export class AuthService {
       });
     }
 
+    if (!account.isActive)
+      throw new UnauthorizedException('Tài khoản không khả dụng');
     const payload = {
       sub: account.id,
       email: account.email,

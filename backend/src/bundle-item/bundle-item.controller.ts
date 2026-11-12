@@ -84,7 +84,11 @@ export class BundleItemController {
   @Roles(Role.ADMIN)
   @Post(':id/image')
   @UseInterceptors(
-    FileInterceptor('image', { storage: multerStorage, fileFilter }),
+    FileInterceptor('image', {
+      storage: multerStorage,
+      fileFilter,
+      limits: { fileSize: 10 * 1024 * 1024, files: 1 },
+    }),
   )
   async uploadImage(
     @Param('id', ParseIntPipe) id: number,

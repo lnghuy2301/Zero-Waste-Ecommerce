@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AccountRequestDto } from './dto/account.request.dto';
 import { AccountResponseDto } from './dto/account.response.dto';
@@ -8,6 +8,7 @@ import { UpdateActiveRequestDto } from './dto/update_active.request.dto';
 import { UpdateRoleRequesrDto } from './dto/update_role.request.dto';
 import { plainToInstance } from 'class-transformer';
 import { Role } from '@prisma/client';
+import { removeUpload } from '../media/config/remove-upload';
 
 @Injectable()
 export class AccountRepository {
@@ -118,6 +119,10 @@ export class AccountRepository {
     return this.prismaService.$transaction(async (tx) => {
       const account = await this.getAccountById(id);
       if (!account) return null;
+      if (account.role === Role.ADMIN)
+        throw new BadRequestException(
+          'Không xóa tài khoản quản trị bằng thao tác này',
+        );
       await tx.customerProfile.deleteMany({
         where: {
           accountId: account.id,
@@ -149,11 +154,12 @@ export class AccountRepository {
       });
 
       if (accounts.length === 0) return null;
+      const customerIds = accounts.map((account) => account.id);
 
       await tx.customerProfile.deleteMany({
         where: {
           accountId: {
-            in: listAccount.Ids,
+            in: customerIds,
           },
         },
       });
@@ -161,7 +167,7 @@ export class AccountRepository {
       await tx.account.deleteMany({
         where: {
           id: {
-            in: listAccount.Ids,
+            in: customerIds,
           },
         },
       });
@@ -174,6 +180,10 @@ export class AccountRepository {
     id: number,
     file: Express.Multer.File,
   ): Promise<Account_profileResponseDto> {
+    const previous = await this.prismaService.account.findUnique({
+      where: { id },
+      select: { avatar: true },
+    });
     const updated = await this.prismaService.account.update({
       where: { id },
       data: {
@@ -181,7 +191,8 @@ export class AccountRepository {
       },
       include: { profile: true },
     });
-    return updated;
+    await removeUpload(previous?.avatar);
+    return plainToInstance(Account_profileResponseDto, updated);
   }
   async getTopCustomers() {
     // 1. Lấy danh sách khách hàng và dùng select để Prisma tự nội suy đúng kiểu dữ liệu

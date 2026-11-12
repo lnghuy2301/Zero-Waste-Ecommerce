@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { mediaUrl } from '@/utils/media'
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { RouterLink, useRouter } from 'vue-router' // Đã thêm useRouter để fix lỗi click ảnh
 import { Category } from '@/service/category.ts'
@@ -10,6 +11,7 @@ const allProducts = ref<any[]>([])
 const promotions = ref<any[]>([])
 const variantMap = ref<Map<number, any[]>>(new Map())
 const isLoading = ref(true)
+const loadError = ref('')
 
 // --- STATE QUẢN LÝ SLIDER DANH MỤC ---
 const currentPage = ref(0)
@@ -41,21 +43,25 @@ const promoProducts = computed(() => {
   return allProducts.value
     .filter((p) => {
       const variants = variantMap.value.get(p.id) || []
-      return variants.some((v) => v.promotionId !== null)
+      return variants.some((v) => {
+        const promo = promotions.value.find((p) => p.id === v.promotionId)
+        return (
+          promo?.isActive &&
+          new Date(promo.startDate).getTime() <= Date.now() &&
+          new Date(promo.endDate).getTime() >= Date.now()
+        )
+      })
     })
     .slice(0, 5)
 })
 
 const displayPromoProducts = computed(() => {
-  return promoProducts.value.length > 0 ? promoProducts.value : latestProducts.value.slice(0, 5)
+  return promoProducts.value
 })
 
 // --- HELPER & API ---
-const BACKEND_URL = 'http://localhost:3000'
-const getImageUrl = (path: string | null) => {
-  if (!path) return 'https://placehold.co/400x400/f4f7ee/658a22?text=Eco+Store'
-  return `${BACKEND_URL}${path.startsWith('/') ? '' : '/'}${path}`
-}
+const getImageUrl = mediaUrl
+const getOriginalPrice = (id: number) => Number(variantMap.value.get(id)?.[0]?.price || 0)
 
 const getDiscountedPrice = (productId: number) => {
   const variants = variantMap.value.get(productId) || []
@@ -64,7 +70,13 @@ const getDiscountedPrice = (productId: number) => {
 
   if (!variant.promotionId) return Number(variant.price)
   const promo = promotions.value.find((p) => p.id === variant.promotionId)
-  if (!promo || !promo.isActive) return Number(variant.price)
+  if (
+    !promo ||
+    !promo.isActive ||
+    new Date(promo.startDate).getTime() > Date.now() ||
+    new Date(promo.endDate).getTime() < Date.now()
+  )
+    return Number(variant.price)
 
   let finalPrice = Number(variant.price)
   if (promo.discountType === 'PERCENT') {
@@ -78,6 +90,7 @@ const getDiscountedPrice = (productId: number) => {
 const fetchData = async () => {
   try {
     isLoading.value = true
+    loadError.value = ''
     const [catData, prodRes, varRes, promoRes] = await Promise.all([
       Category.getAllCategories(),
       api.get('/product'),
@@ -86,7 +99,7 @@ const fetchData = async () => {
     ])
 
     categories.value = catData
-    allProducts.value = prodRes.data
+    allProducts.value = prodRes.data.filter((p: any) => p.status === 'ACTIVE')
     promotions.value = promoRes.data
 
     const map = new Map<number, any[]>()
@@ -96,7 +109,7 @@ const fetchData = async () => {
     })
     variantMap.value = map
   } catch (error) {
-    console.error('Lỗi khi tải dữ liệu:', error)
+    loadError.value = 'Không tải được cửa hàng. Vui lòng kiểm tra API hoặc thử lại.'
   } finally {
     isLoading.value = false
   }
@@ -128,15 +141,14 @@ onUnmounted(() => {
 
 <template>
   <main class="bg-white min-h-screen font-sans selection:bg-[#eef4e6] selection:text-[#658a22]">
+    <div v-if="loadError" role="alert" class="m-4 rounded-xl bg-amber-50 p-4 text-amber-900">
+      {{ loadError }} <button class="ml-2 underline" @click="fetchData">Thử lại</button>
+    </div>
     <section
       class="relative h-[80vh] flex items-center overflow-hidden rounded-b-[3.5rem] shadow-2xl"
     >
       <div class="absolute inset-0 z-0">
-        <img
-          alt="Green living"
-          class="w-full h-full object-cover"
-          src="https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?q=80&w=2000&auto=format&fit=crop"
-        />
+        <img alt="Green living" class="w-full h-full object-cover" src="/images/hero.svg" />
         <div
           class="absolute inset-0 bg-gradient-to-r from-[#1e293b]/90 via-[#1e293b]/50 to-transparent"
         ></div>
@@ -147,7 +159,7 @@ onUnmounted(() => {
             class="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-md text-white rounded-full font-bold text-xs uppercase tracking-widest mb-6 border border-white/30"
           >
             <span class="material-symbols-outlined text-[16px]">eco</span>
-            Dự án Recycle Store
+            EcoStore · Cửa hàng demo
           </div>
           <h1
             class="text-5xl md:text-7xl font-black text-white leading-tight uppercase italic mb-6"
@@ -246,7 +258,10 @@ onUnmounted(() => {
       </div>
     </section>
 
-    <section class="py-24 bg-[#fff5f5] relative border-y-2 border-red-100 overflow-hidden">
+    <section
+      v-if="displayPromoProducts.length"
+      class="py-24 bg-[#fff5f5] relative border-y-2 border-red-100 overflow-hidden"
+    >
       <div
         class="absolute -top-20 -left-20 w-64 h-64 bg-red-200 rounded-full blur-3xl opacity-50"
       ></div>
@@ -315,7 +330,7 @@ onUnmounted(() => {
               >
                 <div class="flex flex-col">
                   <span class="text-[11px] text-slate-300 line-through font-bold"
-                    >{{ (getDiscountedPrice(p.id) * 1.2).toLocaleString('vi-VN') }}đ</span
+                    >{{ getOriginalPrice(p.id).toLocaleString('vi-VN') }}đ</span
                   >
                   <span class="text-[18px] font-black text-red-500"
                     >{{ getDiscountedPrice(p.id).toLocaleString('vi-VN') }}đ</span
@@ -425,8 +440,8 @@ onUnmounted(() => {
               },
               {
                 icon: 'science',
-                title: 'An Toàn Tuyệt Đối',
-                desc: 'Không sử dụng hóa chất tẩy rửa độc hại, an toàn cho mọi làn da.',
+                title: 'Dùng Lâu Hơn',
+                desc: 'Bảo quản đúng cách để đồ dùng bền hơn và giảm nhu cầu mua mới.',
               },
             ]"
             :key="idx"
@@ -452,7 +467,6 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap');
 .font-sans {
   font-family: 'Inter', sans-serif;
 }

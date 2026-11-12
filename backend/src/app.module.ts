@@ -1,10 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
+
 import { PrismaModule } from '../prisma/prisma.module';
-import { ServeStaticModule } from '@nestjs/serve-static';
-import { join } from 'path';
 
 // Thêm các module cần thiết
 import { AuthModule } from './auth/auth.module';
@@ -18,16 +16,11 @@ import { ProductVariantModule } from './product-variant/product-variant.module';
 import { CartModule } from './cart/cart.module';
 import { BundleItemModule } from './bundle-item/bundle-item.module';
 import { OrderModule } from './order/order.module';
-import { OrderDetailModule } from './order-detail/order-detail.module';
 import { CommentModule } from './comment/comment.module';
 import { PaymentMethodModule } from './payment_method/payment-method.module';
 import { MediaModule } from './media/media.module';
 @Module({
   imports: [
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'uploads'),
-      serveRoot: '/uploads',
-    }),
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
     AuthModule,
@@ -41,12 +34,11 @@ import { MediaModule } from './media/media.module';
     CartModule,
     BundleItemModule,
     OrderModule,
-    OrderDetailModule,
     CommentModule,
     PaymentMethodModule,
     MediaModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [],
 })
 export class AppModule {}

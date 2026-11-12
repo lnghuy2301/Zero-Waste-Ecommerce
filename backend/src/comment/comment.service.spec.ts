@@ -1,18 +1,16 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { ForbiddenException } from '@nestjs/common';
 import { CommentService } from './comment.service';
 
-describe('CommentService', () => {
-  let service: CommentService;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [CommentService],
-    }).compile();
-
-    service = module.get<CommentService>(CommentService);
-  });
-
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+describe('verified reviews', () => {
+  it('rejects reviews without a completed purchase', async () => {
+    const prisma = {
+      order: { findFirst: jest.fn().mockResolvedValue(null) },
+      comment: { create: jest.fn() },
+    };
+    const service = new CommentService(prisma as any, {} as any);
+    await expect(
+      service.create(2, 1, { content: 'demo', rating: 5 }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.comment.create).not.toHaveBeenCalled();
   });
 });

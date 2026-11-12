@@ -39,9 +39,6 @@ export class CartService {
 
   async getByUser(accountId: number): Promise<CartResponseDto[]> {
     const items = await this.cartRepository.getCartByUser(accountId);
-    if (items.length === 0) {
-      throw new NotFoundException('Giỏ hàng trống');
-    }
     return items;
   }
 
@@ -68,10 +65,7 @@ export class CartService {
     dto: DeleteListCartDto,
     userId: number,
   ): Promise<{ count: number }> {
-    const result = await this.cartRepository.clearCartItems(dto);
-    if (result.count === 0) {
-      throw new NotFoundException('Không có mặt hàng nào để xóa');
-    }
+    const result = await this.cartRepository.clearCartItems(dto, userId);
     return result;
   }
 }

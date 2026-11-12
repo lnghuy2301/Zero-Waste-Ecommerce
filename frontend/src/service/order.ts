@@ -1,6 +1,10 @@
 import api from './api.ts'
 
 export const OrderService = {
+  async confirmDemoPayment(id: number) {
+    const response = await api.post(`/order/${id}/demo-payment`)
+    return response.data
+  },
   // 1. Tạo đơn hàng mới
   async createOrder(orderData: any) {
     const response = await api.post('/order', orderData)

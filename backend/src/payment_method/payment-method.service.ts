@@ -35,9 +35,6 @@ export class PaymentMethodService {
 
   async getAll(): Promise<PaymentMethodResponseDto[]> {
     const methods = await this.repository.getAll();
-    if (methods.length === 0) {
-      throw new NotFoundException('Không có phương thức thanh toán nào');
-    }
     return methods;
   }
 

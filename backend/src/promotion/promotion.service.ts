@@ -17,6 +17,7 @@ export class PromotionService {
   ) {}
 
   async create(dto: PromotionRequestDto): Promise<PromotionResponseDto> {
+    this.validatePromotion(dto);
     return this.promotionRepository.createPromotion(dto);
   }
 
@@ -24,6 +25,7 @@ export class PromotionService {
     id: number,
     dto: PromotionRequestDto,
   ): Promise<PromotionResponseDto> {
+    this.validatePromotion(dto);
     await this.promotionHelper.checkPromotion(id);
     return this.promotionRepository.updatePromotion(id, dto);
   }
@@ -38,10 +40,14 @@ export class PromotionService {
 
   async getAll(): Promise<PromotionResponseDto[]> {
     const promotions = await this.promotionRepository.getAllPromotions();
-    if (promotions.length === 0) {
-      throw new BadRequestException('Không có khuyến mãi nào tồn tại');
-    }
     return promotions;
+  }
+
+  private validatePromotion(dto: PromotionRequestDto) {
+    if (new Date(dto.endDate) <= new Date(dto.startDate))
+      throw new BadRequestException('Ngày kết thúc phải sau ngày bắt đầu');
+    if (dto.discountType === 'PERCENT' && Number(dto.discountValue) > 100)
+      throw new BadRequestException('Phần trăm giảm giá không vượt quá 100');
   }
 
   async delete(id: number): Promise<PromotionResponseDto | null> {

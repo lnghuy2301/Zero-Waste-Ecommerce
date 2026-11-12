@@ -1,25 +1,35 @@
 import { diskStorage } from 'multer';
 import { extname } from 'path';
-import { v4 as uuidv4 } from 'uuid';
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { randomUUID } from 'crypto';
+import { mkdirSync } from 'fs';
+import { BadRequestException } from '@nestjs/common';
 
 export const multerStorage = diskStorage({
-  destination: './uploads',
-  filename: (req, file, callback) => {
-    const randomName = uuidv4();
-    callback(null, `${randomName}${extname(file.originalname)}`);
+  destination: (req, file, callback) => {
+    mkdirSync('./uploads', { recursive: true });
+    callback(null, './uploads');
   },
+  filename: (req, file, callback) =>
+    callback(null, randomUUID() + extname(file.originalname).toLowerCase()),
 });
 
+const mimeTypes: Record<string, string[]> = {
+  '.jpg': ['image/jpeg'],
+  '.jpeg': ['image/jpeg'],
+  '.png': ['image/png'],
+  '.gif': ['image/gif'],
+  '.webp': ['image/webp'],
+  '.mp4': ['video/mp4'],
+  '.mov': ['video/quicktime'],
+  '.avi': ['video/x-msvideo', 'video/avi'],
+  '.webm': ['video/webm'],
+};
 export const fileFilter = (req, file, callback) => {
-  if (!file.originalname.match(/\.(jpg|jpeg|png|gif|mp4|mov|avi)$/i)) {
+  const allowed = mimeTypes[extname(file.originalname).toLowerCase()];
+  if (!allowed?.includes(file.mimetype))
     return callback(
-      new HttpException(
-        'Chỉ hỗ trợ file ảnh (JPG, JPEG, PNG, GIF) và video (MP4, MOV, AVI)!',
-        HttpStatus.BAD_REQUEST,
-      ),
+      new BadRequestException('Định dạng file hoặc MIME không được hỗ trợ'),
       false,
     );
-  }
   callback(null, true);
 };

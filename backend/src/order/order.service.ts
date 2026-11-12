@@ -22,6 +22,10 @@ export class OrderService {
     return this.orderRepository.createOrder(dto);
   }
 
+  async confirmDemoPayment(id: number, accountId: number) {
+    return this.orderRepository.confirmDemoPayment(id, accountId);
+  }
+
   async updateOrderStatus(
     id: number,
     status: OrderStatus,
@@ -37,9 +41,10 @@ export class OrderService {
   async getOrderById(
     id: number,
     userId: number,
+    role = 'CUSTOMER',
   ): Promise<OrderResponseDto | null> {
     const order = await this.orderHelper.checkOrder(id);
-    if (order.accountId !== userId) {
+    if (order.accountId !== userId && role !== 'ADMIN') {
       throw new ForbiddenException('Không được xem đơn hàng của người khác');
     }
     return order;

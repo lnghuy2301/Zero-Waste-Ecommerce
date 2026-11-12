@@ -3,18 +3,27 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { join } from 'path';
+import { mkdirSync } from 'fs';
+import { PrismaExceptionFilter } from './common/prisma-exception.filter';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import * as dotenv from 'dotenv';
 
 async function bootstrap() {
-  dotenv.config();
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  mkdirSync(join(process.cwd(), 'uploads'), { recursive: true });
+  app.getHttpAdapter().getInstance().disable('x-powered-by');
 
   app.setGlobalPrefix('api/v1');
+  app.useGlobalFilters(new PrismaExceptionFilter());
 
   // Sửa CORS để cho phép frontend tải ảnh từ uploads
   app.enableCors({
-    origin: ['http://localhost:5173', 'http://localhost:3000'], // thêm port frontend
+    origin: (
+      process.env.CORS_ORIGINS ||
+      process.env.FRONTEND_URL ||
+      'http://localhost:5173'
+    )
+      .split(',')
+      .map((s) => s.trim()),
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Authorization',
     credentials: true,
@@ -43,16 +52,15 @@ async function bootstrap() {
     prefix: '/uploads/',
   });
 
-  await app.listen(3000);
+  await app.listen(
+    Number(process.env.PORT || 3000),
+    process.env.HOST ||
+      (process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1'),
+  );
   console.log(`Application is running on: ${await app.getUrl()}`);
   console.log(`Swagger Docs is running on: ${await app.getUrl()}/api/docs`);
-
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
 }
-bootstrap();
+bootstrap().catch((error) => {
+  console.error('Unable to start API:', error.message);
+  process.exitCode = 1;
+});

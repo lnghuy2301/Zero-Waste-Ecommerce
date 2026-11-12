@@ -1,7 +1,9 @@
 import axios from 'axios'
+import { API_BASE_URL } from '@/utils/media'
 
 const api = axios.create({
-  baseURL: 'http://localhost:3000/api/v1', // Đảm bảo đúng base URL của bạn
+  baseURL: API_BASE_URL,
+  timeout: 15000,
 })
 
 // THÊM ĐOẠN NÀY: Interceptor giúp tự động đính Token
@@ -16,6 +18,18 @@ api.interceptors.request.use(
     return config
   },
   (error) => {
+    return Promise.reject(error)
+  },
+)
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && !error.config?.url?.includes('auth/login')) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      window.dispatchEvent(new Event('user-updated'))
+    }
     return Promise.reject(error)
   },
 )

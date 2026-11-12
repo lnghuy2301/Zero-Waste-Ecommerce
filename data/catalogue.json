@@ -1,0 +1,565 @@
+{
+  "notice": "Tất cả sản phẩm, giá, tồn kho, đánh giá và thông tin môi trường là dữ liệu mô phỏng phục vụ demo. Hình minh họa SVG được tạo riêng cho dự án.",
+  "categories": [
+    {
+      "key": "personal",
+      "name": "Chăm sóc cá nhân",
+      "description": "Đồ dùng vệ sinh có thể tái sử dụng, giảm bao bì nhựa.",
+      "image": "/images/demo/ban-chai-tre.svg"
+    },
+    {
+      "key": "kitchen",
+      "name": "Nhà bếp xanh",
+      "description": "Đồ dùng bếp bền, dễ vệ sinh, dùng nhiều lần.",
+      "image": "/images/demo/ong-hut-inox.svg"
+    },
+    {
+      "key": "bags",
+      "name": "Túi tái sử dụng",
+      "description": "Mang túi riêng mỗi ngày, hạn chế túi dùng một lần.",
+      "image": "/images/demo/tui-cotton.svg"
+    },
+    {
+      "key": "bottles",
+      "name": "Bình và cốc",
+      "description": "Mang nước và đồ uống từ nhà với bình cá nhân.",
+      "image": "/images/demo/binh-inox.svg"
+    },
+    {
+      "key": "home",
+      "name": "Nhà cửa bền vững",
+      "description": "Những thay đổi nhỏ cho một ngôi nhà ít rác thải.",
+      "image": "/images/demo/nen-dau-nanh.svg"
+    },
+    {
+      "key": "travel",
+      "name": "Mang theo mỗi ngày",
+      "description": "Bộ dụng cụ gọn nhẹ cho đi học, đi làm và dã ngoại.",
+      "image": "/images/demo/hop-com-inox.svg"
+    }
+  ],
+  "products": [
+    {
+      "slug": "ban-chai-tre",
+      "name": "Bàn chải tre lông mềm",
+      "category": "personal",
+      "illustration": "brush",
+      "material": "Tre, sợi nylon mềm",
+      "description": "Cán tre mộc vừa tay, đầu lông mềm phù hợp cho thói quen vệ sinh hằng ngày. Đóng gói bằng hộp giấy.",
+      "reusability": "Thay đầu chải sau khoảng 3 tháng; tái sử dụng cán để đánh dấu cây.",
+      "ecoFriendliness": 4,
+      "mainImage": "/images/demo/ban-chai-tre.svg",
+      "variants": [
+        {
+          "sku": "ECO-001-1",
+          "name": "Tự nhiên",
+          "price": 35000,
+          "stock": 25,
+          "color": "Tự nhiên",
+          "image": "/images/demo/ban-chai-tre.svg"
+        },
+        {
+          "sku": "ECO-001-2",
+          "name": "Nâu nhạt",
+          "price": 45000,
+          "stock": 28,
+          "color": "Nâu nhạt",
+          "image": "/images/demo/ban-chai-tre.svg"
+        }
+      ]
+    },
+    {
+      "slug": "xa-phong-dua",
+      "name": "Xà phòng dầu dừa thủ công",
+      "category": "personal",
+      "illustration": "soap",
+      "material": "Dầu dừa, glycerin thực vật",
+      "description": "Bánh xà phòng hương dừa nhẹ, 100g, đóng gói bằng giấy. Sản phẩm mẫu, không có công dụng điều trị.",
+      "reusability": "Đặt trên khay thoát nước, giữ khô giữa các lần sử dụng.",
+      "ecoFriendliness": 5,
+      "mainImage": "/images/demo/xa-phong-dua.svg",
+      "variants": [
+        {
+          "sku": "ECO-002-1",
+          "name": "Hương dừa",
+          "price": 65000,
+          "stock": 32,
+          "color": "Hương dừa",
+          "image": "/images/demo/xa-phong-dua.svg"
+        },
+        {
+          "sku": "ECO-002-2",
+          "name": "Không hương",
+          "price": 75000,
+          "stock": 35,
+          "color": "Không hương",
+          "image": "/images/demo/xa-phong-dua.svg"
+        }
+      ]
+    },
+    {
+      "slug": "bong-tay-trang",
+      "name": "Bộ bông tẩy trang giặt lại",
+      "category": "personal",
+      "illustration": "pads",
+      "material": "Cotton hai lớp",
+      "description": "Bộ 8 miếng bông mềm đi kèm túi giặt nhỏ. Dùng cho chu trình chăm sóc da thông thường.",
+      "reusability": "Giặt sạch sau mỗi lần sử dụng, phơi khô trước khi cất.",
+      "ecoFriendliness": 4,
+      "mainImage": "/images/demo/bong-tay-trang.svg",
+      "variants": [
+        {
+          "sku": "ECO-003-1",
+          "name": "Kem",
+          "price": 89000,
+          "stock": 39,
+          "color": "Kem",
+          "image": "/images/demo/bong-tay-trang.svg"
+        },
+        {
+          "sku": "ECO-003-2",
+          "name": "Trắng",
+          "price": 99000,
+          "stock": 42,
+          "color": "Trắng",
+          "image": "/images/demo/bong-tay-trang.svg"
+        }
+      ]
+    },
+    {
+      "slug": "ong-hut-inox",
+      "name": "Bộ ống hút inox kèm cọ",
+      "category": "kitchen",
+      "illustration": "straws",
+      "material": "Inox 304",
+      "description": "Gồm 2 ống thẳng, 2 ống cong, cọ rửa và túi vải. Phù hợp đồ uống lạnh và sinh tố.",
+      "reusability": "Vệ sinh bằng cọ sau mỗi lần dùng, lau khô trước khi cất.",
+      "ecoFriendliness": 5,
+      "mainImage": "/images/demo/ong-hut-inox.svg",
+      "variants": [
+        {
+          "sku": "ECO-004-1",
+          "name": "Bạc",
+          "price": 59000,
+          "stock": 46,
+          "color": "Bạc",
+          "image": "/images/demo/ong-hut-inox.svg"
+        },
+        {
+          "sku": "ECO-004-2",
+          "name": "Xám",
+          "price": 69000,
+          "stock": 49,
+          "color": "Xám",
+          "image": "/images/demo/ong-hut-inox.svg"
+        }
+      ]
+    },
+    {
+      "slug": "ban-chai-xo-dua",
+      "name": "Cọ rửa bát xơ dừa",
+      "category": "kitchen",
+      "illustration": "brush",
+      "material": "Xơ dừa, gỗ cao su",
+      "description": "Cọ rửa dạng tròn với tay cầm gỗ. Thích hợp vệ sinh bát, đĩa và đồ dùng nhà bếp.",
+      "reusability": "Rửa sạch và treo ở nơi thoáng, tránh ngâm nước lâu.",
+      "ecoFriendliness": 4,
+      "mainImage": "/images/demo/ban-chai-xo-dua.svg",
+      "variants": [
+        {
+          "sku": "ECO-005-1",
+          "name": "Tròn nhỏ",
+          "price": 45000,
+          "stock": 53,
+          "color": "Tròn nhỏ",
+          "image": "/images/demo/ban-chai-xo-dua.svg"
+        },
+        {
+          "sku": "ECO-005-2",
+          "name": "Tròn lớn",
+          "price": 55000,
+          "stock": 56,
+          "color": "Tròn lớn",
+          "image": "/images/demo/ban-chai-xo-dua.svg"
+        }
+      ]
+    },
+    {
+      "slug": "mang-boc-sap",
+      "name": "Bộ khăn bọc thực phẩm sáp thực vật",
+      "category": "kitchen",
+      "illustration": "wrap",
+      "material": "Cotton phủ sáp thực vật",
+      "description": "Bộ 3 khăn kích thước S/M/L để bọc rau, trái cây hoặc phủ miệng bát. Không dùng cho thực phẩm nóng hay thịt sống.",
+      "reusability": "Lau bằng nước mát, phơi tự nhiên và dùng lại.",
+      "ecoFriendliness": 5,
+      "mainImage": "/images/demo/mang-boc-sap.svg",
+      "variants": [
+        {
+          "sku": "ECO-006-1",
+          "name": "Lá xanh",
+          "price": 129000,
+          "stock": 60,
+          "color": "Lá xanh",
+          "image": "/images/demo/mang-boc-sap.svg"
+        },
+        {
+          "sku": "ECO-006-2",
+          "name": "Hoa vàng",
+          "price": 139000,
+          "stock": 63,
+          "color": "Hoa vàng",
+          "image": "/images/demo/mang-boc-sap.svg"
+        }
+      ]
+    },
+    {
+      "slug": "tui-cotton",
+      "name": "Túi tote cotton đi chợ",
+      "category": "bags",
+      "illustration": "bag",
+      "material": "Cotton canvas 280gsm",
+      "description": "Túi vải chắc chắn, có ngăn nhỏ bên trong, kích thước 35 × 40cm. Phù hợp mang sách và mua sắm.",
+      "reusability": "Giặt nhẹ ở nhiệt độ thấp, phơi trong bóng râm.",
+      "ecoFriendliness": 4,
+      "mainImage": "/images/demo/tui-cotton.svg",
+      "variants": [
+        {
+          "sku": "ECO-007-1",
+          "name": "Kem mộc",
+          "price": 99000,
+          "stock": 67,
+          "color": "Kem mộc",
+          "image": "/images/demo/tui-cotton.svg"
+        },
+        {
+          "sku": "ECO-007-2",
+          "name": "Xanh rêu",
+          "price": 109000,
+          "stock": 70,
+          "color": "Xanh rêu",
+          "image": "/images/demo/tui-cotton.svg"
+        }
+      ]
+    },
+    {
+      "slug": "tui-luoi",
+      "name": "Bộ túi lưới đựng rau củ",
+      "category": "bags",
+      "illustration": "bag",
+      "material": "Cotton dệt lưới",
+      "description": "Bộ 3 túi dây rút S/M/L, thoáng khí để phân loại rau củ khi đi chợ.",
+      "reusability": "Giặt và phơi khô, gấp gọn mang theo cho lần mua sắm sau.",
+      "ecoFriendliness": 5,
+      "mainImage": "/images/demo/tui-luoi.svg",
+      "variants": [
+        {
+          "sku": "ECO-008-1",
+          "name": "Mộc",
+          "price": 79000,
+          "stock": 74,
+          "color": "Mộc",
+          "image": "/images/demo/tui-luoi.svg"
+        },
+        {
+          "sku": "ECO-008-2",
+          "name": "Trắng",
+          "price": 89000,
+          "stock": 77,
+          "color": "Trắng",
+          "image": "/images/demo/tui-luoi.svg"
+        }
+      ]
+    },
+    {
+      "slug": "tui-day-rut",
+      "name": "Túi dây rút vải tái sử dụng",
+      "category": "bags",
+      "illustration": "bag",
+      "material": "Cotton canvas",
+      "description": "Túi 25 × 30cm đựng phụ kiện, giày dép nhẹ hoặc gói quà không cần giấy bọc dùng một lần.",
+      "reusability": "Giặt nhẹ và dùng lại để sắp xếp hành lý.",
+      "ecoFriendliness": 4,
+      "mainImage": "/images/demo/tui-day-rut.svg",
+      "variants": [
+        {
+          "sku": "ECO-009-1",
+          "name": "Nâu đất",
+          "price": 69000,
+          "stock": 81,
+          "color": "Nâu đất",
+          "image": "/images/demo/tui-day-rut.svg"
+        },
+        {
+          "sku": "ECO-009-2",
+          "name": "Xanh lá",
+          "price": 79000,
+          "stock": 84,
+          "color": "Xanh lá",
+          "image": "/images/demo/tui-day-rut.svg"
+        }
+      ]
+    },
+    {
+      "slug": "binh-inox",
+      "name": "Bình nước inox 500ml",
+      "category": "bottles",
+      "illustration": "bottle",
+      "material": "Inox 304, nắp tre",
+      "description": "Bình hai lớp 500ml có quai xách, thiết kế gọn cho bàn làm việc và hành trình mỗi ngày.",
+      "reusability": "Vệ sinh sau mỗi ngày, không dùng máy rửa bát.",
+      "ecoFriendliness": 5,
+      "mainImage": "/images/demo/binh-inox.svg",
+      "variants": [
+        {
+          "sku": "ECO-010-1",
+          "name": "Xanh rêu",
+          "price": 249000,
+          "stock": 28,
+          "color": "Xanh rêu",
+          "image": "/images/demo/binh-inox.svg"
+        },
+        {
+          "sku": "ECO-010-2",
+          "name": "Kem",
+          "price": 259000,
+          "stock": 31,
+          "color": "Kem",
+          "image": "/images/demo/binh-inox.svg"
+        }
+      ]
+    },
+    {
+      "slug": "coc-gap",
+      "name": "Cốc silicone gấp gọn 350ml",
+      "category": "bottles",
+      "illustration": "cup",
+      "material": "Silicone thực phẩm",
+      "description": "Cốc có nắp, gấp gọn khi không sử dụng, dung tích 350ml. Phù hợp mang đồ uống cá nhân.",
+      "reusability": "Rửa sạch bằng nước ấm, mở nắp cho khô hoàn toàn.",
+      "ecoFriendliness": 4,
+      "mainImage": "/images/demo/coc-gap.svg",
+      "variants": [
+        {
+          "sku": "ECO-011-1",
+          "name": "Đất nung",
+          "price": 159000,
+          "stock": 35,
+          "color": "Đất nung",
+          "image": "/images/demo/coc-gap.svg"
+        },
+        {
+          "sku": "ECO-011-2",
+          "name": "Xanh bạc hà",
+          "price": 169000,
+          "stock": 38,
+          "color": "Xanh bạc hà",
+          "image": "/images/demo/coc-gap.svg"
+        }
+      ]
+    },
+    {
+      "slug": "ly-thuy-tinh",
+      "name": "Ly thủy tinh bọc silicone 450ml",
+      "category": "bottles",
+      "illustration": "cup",
+      "material": "Thủy tinh borosilicate, silicone",
+      "description": "Ly trong suốt với vòng chống trượt và nắp tre. Đi kèm ống hút thủy tinh, dung tích 450ml.",
+      "reusability": "Rửa bằng tay, tránh va đập và thay đổi nhiệt độ đột ngột.",
+      "ecoFriendliness": 5,
+      "mainImage": "/images/demo/ly-thuy-tinh.svg",
+      "variants": [
+        {
+          "sku": "ECO-012-1",
+          "name": "Màu cát",
+          "price": 179000,
+          "stock": 42,
+          "color": "Màu cát",
+          "image": "/images/demo/ly-thuy-tinh.svg"
+        },
+        {
+          "sku": "ECO-012-2",
+          "name": "Xanh",
+          "price": 189000,
+          "stock": 45,
+          "color": "Xanh",
+          "image": "/images/demo/ly-thuy-tinh.svg"
+        }
+      ]
+    },
+    {
+      "slug": "nen-dau-nanh",
+      "name": "Nến sáp đậu nành hũ thủy tinh",
+      "category": "home",
+      "illustration": "candle",
+      "material": "Sáp đậu nành, hũ thủy tinh",
+      "description": "Nến 150g với bấc cotton, hương thơm dịu cho góc đọc sách. Không để nến cháy khi không có người trông.",
+      "reusability": "Làm sạch hũ sau khi dùng hết để đựng đồ nhỏ.",
+      "ecoFriendliness": 4,
+      "mainImage": "/images/demo/nen-dau-nanh.svg",
+      "variants": [
+        {
+          "sku": "ECO-013-1",
+          "name": "Gỗ ấm",
+          "price": 189000,
+          "stock": 49,
+          "color": "Gỗ ấm",
+          "image": "/images/demo/nen-dau-nanh.svg"
+        },
+        {
+          "sku": "ECO-013-2",
+          "name": "Cam nhẹ",
+          "price": 199000,
+          "stock": 52,
+          "color": "Cam nhẹ",
+          "image": "/images/demo/nen-dau-nanh.svg"
+        }
+      ]
+    },
+    {
+      "slug": "mieng-rua",
+      "name": "Bộ miếng rửa chén xơ mướp",
+      "category": "home",
+      "illustration": "pads",
+      "material": "Xơ mướp khô",
+      "description": "Bộ 3 miếng xơ mướp tự nhiên, mềm hơn khi ngâm nước, phù hợp vệ sinh chén đĩa.",
+      "reusability": "Rửa sạch và treo khô sau mỗi lần dùng.",
+      "ecoFriendliness": 5,
+      "mainImage": "/images/demo/mieng-rua.svg",
+      "variants": [
+        {
+          "sku": "ECO-014-1",
+          "name": "Hình tròn",
+          "price": 39000,
+          "stock": 56,
+          "color": "Hình tròn",
+          "image": "/images/demo/mieng-rua.svg"
+        },
+        {
+          "sku": "ECO-014-2",
+          "name": "Hình chữ nhật",
+          "price": 49000,
+          "stock": 59,
+          "color": "Hình chữ nhật",
+          "image": "/images/demo/mieng-rua.svg"
+        }
+      ]
+    },
+    {
+      "slug": "khay-tre",
+      "name": "Khay tre đựng đồ cá nhân",
+      "category": "home",
+      "illustration": "tray",
+      "material": "Tre ép",
+      "description": "Khay nhỏ 20 × 12cm để sắp xếp xà phòng, bàn chải hoặc đồ dùng bàn làm việc.",
+      "reusability": "Lau khô thường xuyên, tránh đặt trực tiếp trong nước.",
+      "ecoFriendliness": 4,
+      "mainImage": "/images/demo/khay-tre.svg",
+      "variants": [
+        {
+          "sku": "ECO-015-1",
+          "name": "Tre sáng",
+          "price": 119000,
+          "stock": 63,
+          "color": "Tre sáng",
+          "image": "/images/demo/khay-tre.svg"
+        },
+        {
+          "sku": "ECO-015-2",
+          "name": "Tre nâu",
+          "price": 129000,
+          "stock": 66,
+          "color": "Tre nâu",
+          "image": "/images/demo/khay-tre.svg"
+        }
+      ]
+    },
+    {
+      "slug": "hop-com-inox",
+      "name": "Hộp cơm inox 2 ngăn 900ml",
+      "category": "travel",
+      "illustration": "box",
+      "material": "Inox 304, gioăng silicone",
+      "description": "Hộp cơm có hai ngăn và nắp khóa, dung tích 900ml. Không dùng trong lò vi sóng.",
+      "reusability": "Rửa sạch sau mỗi lần dùng, tháo gioăng để vệ sinh.",
+      "ecoFriendliness": 5,
+      "mainImage": "/images/demo/hop-com-inox.svg",
+      "variants": [
+        {
+          "sku": "ECO-016-1",
+          "name": "Bạc",
+          "price": 299000,
+          "stock": 70,
+          "color": "Bạc",
+          "image": "/images/demo/hop-com-inox.svg"
+        },
+        {
+          "sku": "ECO-016-2",
+          "name": "Xanh rêu",
+          "price": 309000,
+          "stock": 73,
+          "color": "Xanh rêu",
+          "image": "/images/demo/hop-com-inox.svg"
+        }
+      ]
+    },
+    {
+      "slug": "bo-muong-dua",
+      "name": "Bộ muỗng đũa tre mang theo",
+      "category": "travel",
+      "illustration": "cutlery",
+      "material": "Tre, túi cotton",
+      "description": "Gồm muỗng, nĩa, đũa và túi vải. Gọn nhẹ cho bữa trưa ở văn phòng hoặc dã ngoại.",
+      "reusability": "Rửa bằng tay và để khô thoáng, không ngâm lâu.",
+      "ecoFriendliness": 4,
+      "mainImage": "/images/demo/bo-muong-dua.svg",
+      "variants": [
+        {
+          "sku": "ECO-017-1",
+          "name": "Túi kem",
+          "price": 89000,
+          "stock": 77,
+          "color": "Túi kem",
+          "image": "/images/demo/bo-muong-dua.svg"
+        },
+        {
+          "sku": "ECO-017-2",
+          "name": "Túi xanh",
+          "price": 99000,
+          "stock": 80,
+          "color": "Túi xanh",
+          "image": "/images/demo/bo-muong-dua.svg"
+        }
+      ]
+    },
+    {
+      "slug": "tui-dung-binh",
+      "name": "Túi vải đựng bình nước",
+      "category": "travel",
+      "illustration": "bag",
+      "material": "Cotton canvas",
+      "description": "Túi đeo chéo nhỏ vừa bình 500–750ml, dây điều chỉnh độ dài để mang nước tiện lợi.",
+      "reusability": "Giặt nhẹ và phơi tự nhiên.",
+      "ecoFriendliness": 5,
+      "mainImage": "/images/demo/tui-dung-binh.svg",
+      "variants": [
+        {
+          "sku": "ECO-018-1",
+          "name": "Kem mộc",
+          "price": 59000,
+          "stock": 84,
+          "color": "Kem mộc",
+          "image": "/images/demo/tui-dung-binh.svg"
+        },
+        {
+          "sku": "ECO-018-2",
+          "name": "Xanh olive",
+          "price": 69000,
+          "stock": 27,
+          "color": "Xanh olive",
+          "image": "/images/demo/tui-dung-binh.svg"
+        }
+      ]
+    }
+  ]
+}

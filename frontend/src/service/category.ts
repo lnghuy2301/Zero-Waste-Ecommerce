@@ -6,14 +6,14 @@ export const Category = {
     return response.data
   },
 
-  async createCategory(data: { name: string; slug: string }) {
+  async createCategory(data: { name: string; description?: string | null }) {
     const response = await api.post('/category', data)
     return response.data
   },
 
   // Nếu sau này cần thì bổ sung
   async updateCategory(id: number, data: any) {
-    const response = await api.put(`/category/${id}`, data)
+    const response = await api.put(`/category/${id}/category`, data)
     return response.data
   },
 

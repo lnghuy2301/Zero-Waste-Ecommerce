@@ -100,13 +100,32 @@ export class CommentService {
         throw new ForbiddenException('Bình luận cha không thuộc sản phẩm này.');
     }
 
-    return this.prisma.comment.create({
+    return this.prisma.$transaction(async (tx) => {
+      const comment = await tx.comment.create({
+        data: {
+          content: createCommentDto.content,
+          rating: createCommentDto.rating,
+          productId,
+          accountId: userId,
+          parentId: createCommentDto.parentId,
+        },
+      });
+      await this.refreshRating(tx, productId);
+      return comment;
+    });
+  }
+
+  private async refreshRating(tx: any, productId: number) {
+    const stats = await tx.comment.aggregate({
+      where: { productId, isHidden: false },
+      _avg: { rating: true },
+      _count: { id: true },
+    });
+    await tx.product.update({
+      where: { id: productId },
       data: {
-        content: createCommentDto.content,
-        rating: createCommentDto.rating,
-        productId,
-        accountId: userId,
-        parentId: createCommentDto.parentId,
+        danhGiaTrungBinh: stats._avg.rating || 0,
+        soLuongDanhGia: stats._count.id,
       },
     });
   }
@@ -129,11 +148,16 @@ export class CommentService {
     const comment = await this.prisma.comment.findUnique({ where: { id } });
     if (!comment) throw new NotFoundException('Không tìm thấy bình luận này.');
 
-    return this.prisma.comment.update({
-      where: { id },
-      data: { isHidden },
+    return this.prisma.$transaction(async (tx) => {
+      const result = await tx.comment.update({
+        where: { id },
+        data: { isHidden },
+      });
+      await this.refreshRating(tx, comment.productId);
+      return result;
     });
   }
+
   // Admin xóa nhiều bình luận
   async deleteMany(dto: DeleteListCommentDto) {
     if (!dto.Ids || dto.Ids.length === 0) {

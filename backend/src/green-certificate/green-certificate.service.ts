@@ -42,9 +42,6 @@ export class GreenCertificateService {
   async getAll(): Promise<GreenCertificateResponseDto[]> {
     const certs =
       await this.greenCertificateRepository.getAllGreenCertificates();
-    if (certs.length === 0) {
-      throw new BadRequestException('Không có chứng nhận xanh nào tồn tại');
-    }
     return certs;
   }
 

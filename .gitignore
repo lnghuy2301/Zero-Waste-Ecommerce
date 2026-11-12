@@ -1,26 +1,46 @@
-# Dependencies
+# Dependencies and generated output
 node_modules/
-
-# Production & Build
 dist/
 build/
-backend/dist/
-frontend/dist/
+coverage/
+*.tsbuildinfo
+.eslintcache
+release/
+.tmp/
+.local/
 
-# Environment Variables (Bao mat)
+# Python environments and caches
+.venv/
+.venv-*/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+faiss_index*/
+*.egg-info/
+
+# Private configuration
 .env
 .env.*
 !.env.example
+*.pem
+*.key
 
-# IDEs & System
+# Uploaded runtime files (demo illustrations live in frontend/public/images)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Editor, system and logs
 .idea/
 .vscode/
+.agents/
+.codex/
+.aws/
 *.swp
 *.iml
 .DS_Store
 Thumbs.db
-
-# Logs
 *.log
-npm-debug.log*
-

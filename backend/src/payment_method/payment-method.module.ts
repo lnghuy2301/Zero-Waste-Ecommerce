@@ -3,7 +3,6 @@ import { PaymentMethodController } from './payment-method.controller';
 import { PaymentMethodService } from './payment-method.service';
 import { PaymentMethodRepository } from './payment-method.repository';
 import { PaymentMethodHelper } from './payment-method.helper';
-import { PrismaService } from '../../prisma/prisma.service';
 
 @Module({
   controllers: [PaymentMethodController],
@@ -11,7 +10,6 @@ import { PrismaService } from '../../prisma/prisma.service';
     PaymentMethodService,
     PaymentMethodRepository,
     PaymentMethodHelper,
-    PrismaService,
   ],
   exports: [PaymentMethodService, PaymentMethodRepository, PaymentMethodHelper],
 })

@@ -2,6 +2,7 @@ import { Exclude, Expose, Type } from 'class-transformer';
 import { Role } from '@prisma/client';
 import { CustomerProfileResponseDto } from '../../customer_profile/dto/customer_profile.response.dto';
 
+@Exclude()
 export class Account_profileResponseDto {
   @Expose()
   id: number;

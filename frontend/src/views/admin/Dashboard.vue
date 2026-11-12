@@ -148,12 +148,12 @@ onBeforeUnmount(() => {
     <div class="flex justify-between items-end">
       <div>
         <h1 class="text-3xl font-black text-slate-900 tracking-tight">Tổng quan hệ thống</h1>
-        <p class="text-slate-500 font-medium">Dữ liệu được cập nhật theo thời gian thực</p>
+        <p class="text-slate-500 font-medium">Thống kê từ dữ liệu cửa hàng demo</p>
       </div>
       <div
         class="bg-white px-4 py-2 rounded-2xl border border-slate-100 shadow-sm text-sm font-bold text-slate-600"
       >
-        Năm 2026
+        Năm {{ new Date().getFullYear() }}
       </div>
     </div>
 

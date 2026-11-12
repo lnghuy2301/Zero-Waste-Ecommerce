@@ -3,7 +3,6 @@ import { ProductVariantController } from './product-variant.controller';
 import { ProductVariantService } from './product-variant.service';
 import { ProductVariantRepository } from './product-variant.repository';
 import { ProductVariantHelper } from './product-variant.helper';
-import { PrismaService } from '../../prisma/prisma.service';
 import { AccountHelper } from '../account/account.helper';
 import { AccountModule } from '../account/account.module';
 
@@ -14,7 +13,6 @@ import { AccountModule } from '../account/account.module';
     ProductVariantService,
     ProductVariantRepository,
     ProductVariantHelper,
-    PrismaService,
     AccountHelper,
   ],
   exports: [

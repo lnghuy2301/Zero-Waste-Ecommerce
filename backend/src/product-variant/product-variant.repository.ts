@@ -26,6 +26,7 @@ export class ProductVariantRepository {
         volume: data.volume,
         color: data.color,
         size: data.size,
+        image: data.image,
       },
       include: { product: true },
     });
@@ -53,6 +54,7 @@ export class ProductVariantRepository {
         volume: data.volume,
         color: data.color,
         size: data.size,
+        image: data.image,
       },
       include: { product: true },
     });
