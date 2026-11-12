@@ -12,7 +12,8 @@ export const OrderService = {
   },
 
   // 2. Cập nhật trạng thái đơn hàng (Admin)
-  async updateOrderStatus(id: number, status: string) {
+  async updateOrderStatus(id: number, statusPayload: string | { status: string }) {
+    const status = typeof statusPayload === 'string' ? statusPayload : statusPayload.status
     const response = await api.put(`/order/${id}/status`, { status })
     return response.data
   },
